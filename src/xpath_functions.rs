@@ -18,7 +18,7 @@
 //!   The result will be printed to standard output and the result returned so that `DEBUG` does not affect the computation.    
 
 use sxd_document::dom::{Element, ChildOfElement};
-use sxd_xpath::{Value, Context, context, function::*, nodeset::*};
+use sxd_xpath::{Value, Context as XPathContext, context, function::*, nodeset::*};
 use crate::definitions::{Definitions, SPEECH_DEFINITIONS, BRAILLE_DEFINITIONS};
 use regex::Regex;
 use crate::pretty_print::mml_to_string;
@@ -1422,7 +1422,7 @@ impl Function for ReplaceAll {
 }
 
 /// Add all the functions defined in this module to `context`.
-pub fn add_builtin_functions(context: &mut Context) {
+pub fn add_builtin_functions(context: &mut XPathContext) {
     context.set_function("NestingChars", crate::braille::NemethNestingChars);
     context.set_function("BrailleChars", crate::braille::BrailleChars);
     context.set_function("NeedsToBeGrouped", crate::braille::NeedsToBeGrouped);

@@ -14,22 +14,8 @@
 //! 
 //! To get the MathML associated with the current navigation node, call [`get_navigation_mathml`].
 //! To just get the `id` and offset from the id of the current navigation node, call [`get_navigation_mathml_id`].
-#![recursion_limit = "1024"]
-
-#[macro_use]
-extern crate error_chain;
-
-// We'll put our errors in an `errors` module, and other modules in
-// this crate will `use errors::*;` to get access to everything
-// `error_chain!` creates.
 pub mod errors {
-    // Create the Error, ErrorKind, ResultExt, and Result types
-    error_chain! {
-        // foreign_links {
-        //     Io(std::io::Error);
-        //     HttpRequest(reqwest::Error);
-        // }
-    }
+    pub use anyhow::{Result, Error, bail, anyhow, Context};
 }
 
 #[macro_use]

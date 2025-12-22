@@ -589,7 +589,7 @@ pub fn errors_to_string(e: &Error) -> String {
     enable_logs();
     let mut result = String::default();
     let mut first_time = true;
-    for e in e.iter() {
+    for e in e.chain() {
         if first_time {
             result = format!("{e}\n");
             first_time = false;
