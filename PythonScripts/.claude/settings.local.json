@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+
+      "Bash(python PythonScripts/audit-translations.py:*)",
+      "Bash(python -m audit_translations:*)",
+
+      "Bash(gh issue list:*)",
+
+      "WebFetch(domain:github.com)",
+
+      "Bash(cat:*)"
+    ]
+  },
+  "outputStyle": "Explanatory"
+}

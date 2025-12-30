@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(cat:*)",
+      "Bash(xargs ls:*)",
+      "Bash(wc:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cargo --version:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo outdated:*)",
+      "Bash(git log:*)",
+      "Bash(git mv:*)",
+      "Bash(gh pr list:*)",
+      "WebSearch",
+      "Bash(uv run python:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(uv sync:*)",
+      "Bash(RUST_LOG=debug cargo test:*)",
+      "Bash(python audit_translations.py:*)",
+      "WebFetch(domain:job-boards.greenhouse.io)",
+      "WebFetch(domain:openai.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:apply.workable.com)"
+    ]
+  },
+  "spinnerTipsEnabled": true
+}
