@@ -266,7 +266,8 @@ fn get_node_by_id<'a>(mathml: Element<'a>, pos: &NavigationPosition) -> Option<E
 
 /// Search the mathml for the id and set the navigation node to that id
 /// Resets the navigation stack
-pub fn set_navigation_node_from_id(mathml: Element, id: String, offset: usize) -> Result<()> {
+pub fn set_navigation_node_from_id(mathml: Element, id: impl AsRef<str>, offset: usize) -> Result<()> {
+    let id = id.as_ref().to_string();
     let pos = NavigationPosition { current_node: id.clone(), current_node_offset: offset };
     let node = get_node_by_id(mathml, &pos);
     if node.is_some() {
