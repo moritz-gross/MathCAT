@@ -6,5 +6,8 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = ["rich", "ruamel.yaml"]
 
+[project.scripts]
+audit_translations = "audit_translations.cli:main"
+
 [dependency-groups]
 dev = ["pytest"]
