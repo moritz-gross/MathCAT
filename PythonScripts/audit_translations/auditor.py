@@ -161,7 +161,9 @@ def issue_type_sort_key(issue_type: str) -> Tuple[int, str]:
     """
     Stable ordering for per-rule issue groups.
 
-    Differences are grouped by diff type under the same rule.
+    The first tuple element defines user-facing priority (missing/untranslated/
+    match/condition/variables/structure/extra). The second element keeps sorting
+    deterministic for unknown keys.
     """
     order = {
         "missing_rule": 0,
@@ -176,6 +178,12 @@ def issue_type_sort_key(issue_type: str) -> Tuple[int, str]:
 
 
 def issue_type_label(issue_type: str) -> str:
+    """
+    Return the display label used in rich grouped output.
+
+    Unknown issue types fall back to their raw key so renderer behavior remains
+    robust when new categories are introduced.
+    """
     labels = {
         "missing_rule": "Missing in Translation",
         "untranslated_text": "Untranslated Text",
