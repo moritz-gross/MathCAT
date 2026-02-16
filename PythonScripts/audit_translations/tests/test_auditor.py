@@ -166,7 +166,7 @@ def test_get_yaml_files_includes_region(tmp_path) -> None:
     (region_dir / "unicode.yaml").write_text("---", encoding="utf-8")
 
     files = get_yaml_files(lang_dir, region_dir)
-    assert set(files) == {"base.yaml", "SharedRules/shared.yaml", "unicode.yaml"}
+    assert set(files) == {Path("base.yaml"), Path("SharedRules/shared.yaml"), Path("unicode.yaml")}
 
 
 def test_list_languages_includes_region_codes(tmp_path) -> None:
