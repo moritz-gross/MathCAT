@@ -53,11 +53,11 @@ def get_yaml_files(lang_dir: Path, region_dir: Optional[Path] = None) -> List[st
             return
         for f in directory.glob("*.yaml"):
             if f.name != "prefs.yaml":  # Skip prefs.yaml as it's not translated
-                files.add(str(f.relative_to(root)))
+                files.add(f.relative_to(root).as_posix())
         shared_dir = directory / "SharedRules"
         if shared_dir.exists():
             for f in shared_dir.glob("*.yaml"):
-                files.add(str(f.relative_to(root)))
+                files.add(f.relative_to(root).as_posix())
 
     collect_from(lang_dir, lang_dir)
     if region_dir:
