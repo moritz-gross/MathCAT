@@ -395,6 +395,7 @@ class IssueWriter:
 def print_warnings(result: ComparisonResult, file_name: str, verbose: bool = False) -> int:
     """Print warnings to console. Returns count of issues found."""
     issues = 0
+    display_name = Path(file_name).as_posix()
 
     has_issues = result.missing_rules or result.untranslated_text or result.extra_rules or result.rule_differences
     if not has_issues:
@@ -404,7 +405,7 @@ def print_warnings(result: ComparisonResult, file_name: str, verbose: bool = Fal
                   ("red", "✗") if result.translated_rule_count == 0 else ("yellow", "⚠")
     console.print()
     console.rule(style="cyan")
-    console.print(f"[{style}]{icon}[/] [bold]{escape(file_name)}[/]")
+    console.print(f"[{style}]{icon}[/] [bold]{escape(display_name)}[/]")
     console.print(f"  [dim]English: {result.english_rule_count} rules  →  Translated: {result.translated_rule_count} rules[/]")
     console.rule(style="cyan")
 
