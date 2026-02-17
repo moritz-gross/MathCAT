@@ -149,6 +149,45 @@ def test_compare_files_merges_region_rules(tmp_path) -> None:
     assert result.extra_rules == []
 
 
+def test_compare_files_skips_untranslated_and_diffs_when_audit_ignored(tmp_path) -> None:
+    """
+    Ensure audit-ignore suppresses untranslated and diff findings for a rule.
+
+    The translated rule intentionally contains both a lowercase text key and a
+    match mismatch. With an audit-ignore marker present, neither should be
+    surfaced by compare_files.
+    """
+    english_file = tmp_path / "en.yaml"
+    translated_file = tmp_path / "de.yaml"
+
+    english_file.write_text(
+        """- name: ignored-rule
+  tag: mo
+  match: "self::m:mo"
+  replace:
+    - T: "english"
+""",
+        encoding="utf-8",
+    )
+    translated_file.write_text(
+        """- name: ignored-rule
+  tag: mo  # audit-ignore
+  match: "self::m:mi"
+  replace:
+    - t: "nicht uebersetzt"
+""",
+        encoding="utf-8",
+    )
+
+    result = compare_files(str(english_file), str(translated_file))
+
+    assert result.missing_rules == []
+    assert result.extra_rules == []
+    assert result.untranslated_text == []
+    assert result.rule_differences == []
+    assert collect_issues(result, "de.yaml", "de") == []
+
+
 def test_get_yaml_files_includes_region(tmp_path) -> None:
     """
     Ensures get_yaml_files merges base and region file lists.
