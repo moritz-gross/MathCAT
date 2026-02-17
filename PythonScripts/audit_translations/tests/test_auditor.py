@@ -342,11 +342,56 @@ def test_missing_else_block_is_still_reported() -> None:
         f"but found {len(structure_issues)} structure issues"
     )
 
-    # Verify the issue has proper line numbers
+    # Verify the issue anchors to the last shared structure token ('then:')
     issue = structure_issues[0]
-    assert issue["issue_line_en"] is not None
-    # When else: doesn't exist in translation, we fall back to the rule line number
-    assert issue["issue_line_tr"] == 1  # start of the rule
+    assert issue["issue_line_en"] == 7
+    assert issue["issue_line_tr"] == 7
+
+
+def test_structure_diff_uses_position_aware_token_occurrence_for_missing_block(tmp_path) -> None:
+    """
+    Structure diffs with repeated tokens should anchor at the divergence point.
+
+    English contains an additional second `test` block. The first mismatch is
+    after the first `then:`, so both sides should anchor to that shared `then:`
+    line (not to the first `test:` line or the top of the rule).
+    """
+    english_file = tmp_path / "en.yaml"
+    translated_file = tmp_path / "tr.yaml"
+    english_file.write_text(
+        """- name: repeated-structure
+  tag: root
+  match: "."
+  replace:
+    - test:
+        if: a
+        then: [T: "x"]
+    - test:
+        if: b
+        then: [T: "y"]
+""",
+        encoding="utf-8",
+    )
+    translated_file.write_text(
+        """- name: repeated-structure
+  tag: root
+  match: "."
+  replace:
+    - test:
+        if: a
+        then: [T: "x"]
+""",
+        encoding="utf-8",
+    )
+
+    result = compare_files(str(english_file), str(translated_file))
+    issues = collect_issues(result, "repeated-structure.yaml", "tr")
+    structure_issues = [i for i in issues if i["diff_type"] == "structure"]
+
+    assert len(structure_issues) == 1
+    issue = structure_issues[0]
+    assert issue["issue_line_en"] == 7
+    assert issue["issue_line_tr"] == 7
 
 
 def test_structure_per_fraction_should_anchor_to_replace_lines_expected_behavior() -> None:
