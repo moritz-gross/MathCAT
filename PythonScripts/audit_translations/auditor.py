@@ -308,7 +308,6 @@ def resolve_structure_issue_lines(diff: RuleDifference) -> Optional[Tuple[int, i
     Resolve stable line anchors for a structural rule difference.
 
     Strategy:
-    - Skip truly misaligned token substitutions (both tokens present and different).
     - Use position-aware token occurrence matching when possible.
     - For insert/delete cases (one side missing token), anchor to the previous
       shared structural token; if unavailable, anchor to `replace:`.
@@ -318,11 +317,6 @@ def resolve_structure_issue_lines(diff: RuleDifference) -> Optional[Tuple[int, i
     en_token, tr_token, mismatch_pos = first_structure_mismatch(en_tokens, tr_tokens)
 
     if mismatch_pos < 0:
-        return None
-
-    # Structural token streams diverged semantically; we currently suppress these
-    # to avoid reporting confusing line mappings.
-    if en_token is not None and tr_token is not None and en_token != tr_token:
         return None
 
     # Insertion/deletion: anchor to the previous shared token if possible.

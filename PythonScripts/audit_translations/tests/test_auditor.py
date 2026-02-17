@@ -275,13 +275,13 @@ def test_print_warnings_includes_snippets_when_verbose(fixed_console_width) -> N
     assert output == golden_path.read_text(encoding="utf-8")
 
 
-def test_misaligned_structure_differences_are_skipped() -> None:
+def test_misaligned_structure_differences_are_reported() -> None:
     """
-    Test that structure differences with misaligned tokens are skipped.
+    Test that structure differences with misaligned tokens are reported.
 
     When English has a "test" block that Norwegian doesn't have (and vice versa),
-    the structural tokens become misaligned. The fix skips reporting these
-    to avoid showing confusing line numbers.
+    the structural tokens become misaligned. We still report this as a structure
+    issue and anchor it to the divergence position.
     """
     base_dir = Path(__file__).parent
     fixtures_dir = base_dir / "fixtures"
@@ -295,16 +295,14 @@ def test_misaligned_structure_differences_are_skipped() -> None:
     assert len(result.rule_differences) > 0
     assert any(diff.diff_type == "structure" for diff in result.rule_differences)
 
-    # But when collecting issues, misaligned structure diffs should be filtered out
+    # Collecting issues should include a structure issue.
     issues = collect_issues(result, "structure_misaligned.yaml", "de")
     structure_issues = [i for i in issues if i["diff_type"] == "structure"]
 
-    # CRITICAL: Before the fix, this would have structure issues with misleading line numbers
-    # After the fix, misaligned structures are skipped, so we should have 0 structure issues
-    assert len(structure_issues) == 0, (
-        "Expected misaligned structure differences to be filtered out, "
-        f"but found {len(structure_issues)} structure issues"
-    )
+    assert len(structure_issues) == 1
+    issue = structure_issues[0]
+    assert issue["issue_line_en"] == 11
+    assert issue["issue_line_tr"] == 11
 
     # Other differences (like conditions) should still be reported
     condition_issues = [i for i in issues if i["diff_type"] == "condition"]
@@ -394,6 +392,46 @@ def test_structure_diff_uses_position_aware_token_occurrence_for_missing_block(t
     assert issue["issue_line_tr"] == 7
 
 
+def test_structure_substitution_diff_is_reported(tmp_path) -> None:
+    """
+    Structural token substitutions should be reported as structure issues.
+    """
+    english_file = tmp_path / "en.yaml"
+    translated_file = tmp_path / "tr.yaml"
+    english_file.write_text(
+        """- name: substitution-structure
+  tag: root
+  match: "."
+  replace:
+    - test:
+        if: a
+        then: [T: "x"]
+""",
+        encoding="utf-8",
+    )
+    translated_file.write_text(
+        """- name: substitution-structure
+  tag: root
+  match: "."
+  replace:
+    - test:
+        if: a
+        else: [T: "x"]
+""",
+        encoding="utf-8",
+    )
+
+    result = compare_files(str(english_file), str(translated_file))
+    assert any(diff.diff_type == "structure" for diff in result.rule_differences)
+
+    issues = collect_issues(result, "substitution-structure.yaml", "tr")
+    structure_issues = [i for i in issues if i["diff_type"] == "structure"]
+    assert len(structure_issues) == 1
+    issue = structure_issues[0]
+    assert issue["issue_line_en"] == 7
+    assert issue["issue_line_tr"] == 7
+
+
 def test_structure_per_fraction_should_anchor_to_replace_lines_expected_behavior() -> None:
     """
     Expected behavior: structure differences should point to the `replace:` line.
@@ -415,9 +453,9 @@ def test_structure_per_fraction_should_anchor_to_replace_lines_expected_behavior
     assert issue["issue_line_tr"] == 8
 
 
-def test_print_warnings_skips_misaligned_structures() -> None:
+def test_print_warnings_shows_misaligned_structures() -> None:
     """
-    Test that print_warnings doesn't display misaligned structure differences.
+    Test that print_warnings displays misaligned structure differences.
     """
     base_dir = Path(__file__).parent
     fixtures_dir = base_dir / "fixtures"
@@ -435,17 +473,16 @@ def test_print_warnings_skips_misaligned_structures() -> None:
         issues_count = print_warnings(result, "structure_misaligned.yaml", verbose=False)
     output = capture.get()
 
-    # CRITICAL: The output should not contain "Rule structure differs"
-    # because misaligned structures are filtered during display
-    assert "Rule structure differs" not in output, (
-        "Expected misaligned structure differences to be filtered from display"
+    # Misaligned structure differences should be rendered.
+    assert "Rule structure differs" in output, (
+        "Expected misaligned structure differences to be shown in display"
     )
 
-    # The issues count should not include filtered structure differences
-    # It should only count the condition differences
+    # The issues count should include both condition + structure differences.
     condition_diffs = [diff for diff in result.rule_differences if diff.diff_type == "condition"]
-    assert issues_count == len(condition_diffs), (
-        f"Expected issues_count ({issues_count}) to equal condition_diffs ({len(condition_diffs)})"
+    structure_diffs = [diff for diff in result.rule_differences if diff.diff_type == "structure"]
+    assert issues_count == len(condition_diffs) + len(structure_diffs), (
+        f"Expected issues_count ({issues_count}) to include condition+structure diffs"
     )
 
 
