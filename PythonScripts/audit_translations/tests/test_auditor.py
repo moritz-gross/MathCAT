@@ -349,6 +349,27 @@ def test_missing_else_block_is_still_reported() -> None:
     assert issue["issue_line_tr"] == 1  # start of the rule
 
 
+def test_structure_per_fraction_should_anchor_to_replace_lines_expected_behavior() -> None:
+    """
+    Expected behavior: structure differences should point to the `replace:` line.
+
+    This uses real `per-fraction` rules extracted from
+    `en/SimpleSpeak_Rules.yaml` and `nb/SimpleSpeak_Rules.yaml`.
+    In both fixtures, `replace:` is on line 8.
+    """
+    base_dir = Path(__file__).parent
+    path = base_dir / "fixtures" / "repro"
+    result = compare_files(str(path / "en" / "per_fraction.yaml"), str(path / "nb" / "per_fraction.yaml"))
+
+    issues = collect_issues(result, "per_fraction.yaml", "nb")
+    structure_issues = [i for i in issues if i["diff_type"] == "structure"]
+
+    assert len(structure_issues) == 1
+    issue = structure_issues[0]
+    assert issue["issue_line_en"] == 8
+    assert issue["issue_line_tr"] == 8
+
+
 def test_print_warnings_skips_misaligned_structures() -> None:
     """
     Test that print_warnings doesn't display misaligned structure differences.
