@@ -21,6 +21,7 @@ but add common mistakes of AI agents here instead.
 
 ## Python Tooling (`uv`)
 - `uv` is the Python dependency and project manager for repo tooling. Use `uv run <command-name>`
+- discuss new packages before adding them. use `uv add <package-name>` and `uv sync` on confirmation
 - In sandboxed runs, if needed:
   - set `UV_CACHE_DIR=/tmp/uv-cache`
   - rerun with escalated permissions if macOS `system-configuration` panics occur.
