@@ -5,8 +5,10 @@ Handles parsing of rule files and unicode files to extract rule information.
 """
 
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+from jsonpath_ng.ext import parse
+from jsonpath_ng.jsonpath import Fields
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
@@ -69,6 +71,32 @@ def build_raw_blocks(lines: List[str], starts: List[int]) -> List[str]:
         end = starts[idx + 1] if idx + 1 < len(starts) else len(lines)
         blocks.append("\n".join(lines[start:end]))
     return blocks
+
+
+def mapping_key_line(mapping: Any, key: str) -> Optional[int]:
+    """
+    - 'lc' is line and column in YAML file: https://yaml.dev/doc/ruamel.yaml/detail/
+    """
+    if hasattr(mapping, "lc") and hasattr(mapping.lc, "data"):
+        line_info = mapping.lc.data.get(key)
+        return line_info[0] + 1
+    return None
+
+
+def iter_field_matches(node: Any) -> Iterator[Tuple[str, Any, Any]]:
+    """
+    Iterate nested mapping fields using jsonpath.
+
+    Returns tuples of (key, child_value, parent_mapping) in traversal order.
+    """
+    all_fields_expr = parse('$..*')  # '..' is recursive descent
+
+    for match in all_fields_expr.find(node):
+        path = match.path
+        if isinstance(path, Fields) and len(path.fields) == 1:
+            key = path.fields[0]
+            parent = match.context.value if match.context is not None else None
+            yield key, match.value, parent
 
 
 def parse_rules_file(content: str, data: Any) -> List[RuleInfo]:
@@ -162,31 +190,7 @@ def find_untranslated_text_values(node: Any) -> List[str]:
     Find lowercase text keys (t, ot, ct, spell, pronounce, ifthenelse) that should be uppercase in translations.
     Returns list of the untranslated text values found.
     """
-    untranslated: List[str] = []
-    translation_keys = {"t", "ot", "ct", "spell", "pronounce", "ifthenelse"}
-
-    def should_add(text: str) -> bool:
-        if not text.strip():
-            return False
-        if len(text) == 1 and not text.isalpha():
-            return False
-        if text.startswith('$') or text.startswith('@'):
-            return False
-        return True
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if isinstance(key, str) and key.lower() in translation_keys and not key.isupper() and isinstance(child, str):
-                    if should_add(child):
-                        untranslated.append(child)
-                walk(child)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(node)
-    return untranslated
+    return [entry[1] for entry in find_untranslated_text_entries(node)]
 
 
 def find_untranslated_text_entries(node: Any) -> List[Tuple[str, str, Optional[int]]]:
@@ -206,30 +210,14 @@ def find_untranslated_text_entries(node: Any) -> List[Tuple[str, str, Optional[i
             return False
         return True
 
-    def key_line(mapping: Any, key: str) -> Optional[int]:
-        if hasattr(mapping, "lc") and hasattr(mapping.lc, "data"):
-            line_info = mapping.lc.data.get(key)
-            if line_info:
-                return line_info[0] + 1
-        return None
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if (
-                    isinstance(key, str)
-                    and key.lower() in translation_keys
-                    and not key.isupper()
-                    and isinstance(child, str)
-                ):
-                    if should_add(child):
-                        entries.append((key, child, key_line(value, key)))
-                walk(child)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(node)
+    for key, child, parent in iter_field_matches(node):
+        if (
+            key.lower() in translation_keys
+            and not key.isupper()
+            and isinstance(child, str)
+        ):
+            if should_add(child):
+                entries.append((key, child, mapping_key_line(parent, key)))
     return entries
 
 
@@ -257,31 +245,15 @@ def build_line_map(node: Any) -> Dict[str, List[int]]:
             return
         line_map.setdefault(kind, []).append(line)
 
-    def key_line(mapping: Any, key: str) -> Optional[int]:
-        if hasattr(mapping, "lc") and hasattr(mapping.lc, "data"):
-            line_info = mapping.lc.data.get(key)
-            if line_info:
-                return line_info[0] + 1
-        return None
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if isinstance(key, str):
-                    if key == "match":
-                        add_line("match", key_line(value, key))
-                    if key in ("if", "else_if"):
-                        add_line("condition", key_line(value, key))
-                    if key == "variables":
-                        add_line("variables", key_line(value, key))
-                    if key in structure_tokens:
-                        add_line(f"structure:{key}", key_line(value, key))
-                walk(child)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(node)
+    for key, _, parent in iter_field_matches(node):
+        if key == "match":
+            add_line("match", mapping_key_line(parent, key))
+        if key in ("if", "else_if"):
+            add_line("condition", mapping_key_line(parent, key))
+        if key == "variables":
+            add_line("variables", mapping_key_line(parent, key))
+        if key in structure_tokens:
+            add_line(f"structure:{key}", mapping_key_line(parent, key))
     return line_map
 
 
@@ -312,25 +284,18 @@ def dedup_list(values: List[str]) -> List[str]:
 
 def extract_match_pattern(rule_data: Any) -> str:
     if isinstance(rule_data, dict):
-        return normalize_match(rule_data.get("match"))
+        matches = parse('$.match').find(rule_data)
+        if matches:
+            return normalize_match(matches[0].value)
     return ""
 
 
 def extract_conditions(rule_data: Any) -> List[str]:
     """Extract all if/else conditions from a rule"""
     conditions: List[str] = []
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if key in ("if", "else_if") and isinstance(child, str):
-                    conditions.append(child)
-                walk(child)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(rule_data)
+    for key, child, _ in iter_field_matches(rule_data):
+        if key in ("if", "else_if") and isinstance(child, str):
+            conditions.append(child)
     return conditions
 
 
@@ -348,17 +313,9 @@ def extract_variables(rule_data: Any) -> List[Tuple[str, str]]:
                     for name, expr in item.items():
                         variables.append((str(name), str(expr)))
 
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if key == "variables":
-                    add_from_value(child)
-                walk(child)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(rule_data)
+    for key, child, _ in iter_field_matches(rule_data):
+        if key == "variables":
+            add_from_value(child)
     return variables
 
 
@@ -366,18 +323,9 @@ def extract_structure_elements(rule_data: Any) -> List[str]:
     """Extract structural elements (test, with, replace blocks) ignoring text content"""
     elements: List[str] = []
     tokens = {"test", "if", "else_if", "then", "else", "then_test", "else_test", "with", "replace", "intent"}
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if key in tokens:
-                    elements.append(f"{key}:")
-                walk(child)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(rule_data)
+    for key, _, _ in iter_field_matches(rule_data):
+        if key in tokens:
+            elements.append(f"{key}:")
     return elements
 
 
