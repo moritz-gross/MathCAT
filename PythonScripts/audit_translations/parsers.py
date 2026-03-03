@@ -5,7 +5,7 @@ Handles parsing of rule files and unicode files to extract rule information.
 """
 
 import os
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Iterator
 
 from jsonpath_ng.ext import parse
 from jsonpath_ng.jsonpath import Fields
@@ -21,7 +21,7 @@ def is_unicode_file(file_path: str) -> bool:
     return basename in ("unicode.yaml", "unicode-full.yaml")
 
 
-def parse_yaml_file(file_path: str, strict: bool = False) -> Tuple[List[RuleInfo], str]:
+def parse_yaml_file(file_path: str, strict: bool = False) -> tuple[list[RuleInfo], str]:
     """
     Parse a YAML file and extract rules.
     Returns list of RuleInfo and the raw file content.
@@ -53,8 +53,7 @@ def parse_yaml_file(file_path: str, strict: bool = False) -> Tuple[List[RuleInfo
     return rules, content
 
 
-
-def format_tag(tag_value: Any) -> Optional[str]:
+def format_tag(tag_value: Any) -> str | None:
     if tag_value is None:
         return None
     if isinstance(tag_value, list):
@@ -63,7 +62,7 @@ def format_tag(tag_value: Any) -> Optional[str]:
     return str(tag_value)
 
 
-def build_raw_blocks(lines: List[str], starts: List[int]) -> List[str]:
+def build_raw_blocks(lines: list[str], starts: list[int]) -> list[str]:
     blocks = []
     if not starts:
         return blocks
@@ -73,7 +72,7 @@ def build_raw_blocks(lines: List[str], starts: List[int]) -> List[str]:
     return blocks
 
 
-def mapping_key_line(mapping: Any, key: str) -> Optional[int]:
+def mapping_key_line(mapping: Any, key: str) -> int | None:
     """
     - 'lc' is line and column in YAML file: https://yaml.dev/doc/ruamel.yaml/detail/
     """
@@ -83,7 +82,7 @@ def mapping_key_line(mapping: Any, key: str) -> Optional[int]:
     return None
 
 
-def iter_field_matches(node: Any) -> Iterator[Tuple[str, Any, Any]]:
+def iter_field_matches(node: Any) -> Iterator[tuple[str, Any, Any]]:
     """
     Iterate nested mapping fields using jsonpath.
 
@@ -99,16 +98,16 @@ def iter_field_matches(node: Any) -> Iterator[Tuple[str, Any, Any]]:
             yield key, match.value, parent
 
 
-def parse_rules_file(content: str, data: Any) -> List[RuleInfo]:
+def parse_rules_file(content: str, data: Any) -> list[RuleInfo]:
     """Parse a standard rules file with name/tag entries"""
     if not isinstance(data, list):
         return []
 
-    rules: List[RuleInfo] = []
+    rules: list[RuleInfo] = []
     lines = content.splitlines()
 
-    start_lines: List[int] = []
-    rule_items: List[Any] = []
+    start_lines: list[int] = []
+    rule_items: list[Any] = []
     for idx, item in enumerate(data):
         if isinstance(item, dict) and "name" in item:
             line = data.lc.item(idx)[0] if hasattr(data, "lc") else 0
@@ -136,16 +135,16 @@ def parse_rules_file(content: str, data: Any) -> List[RuleInfo]:
     return rules
 
 
-def parse_unicode_file(content: str, data: Any) -> List[RuleInfo]:
+def parse_unicode_file(content: str, data: Any) -> list[RuleInfo]:
     """Parse a unicode file with character/range keys"""
     if not isinstance(data, list):
         return []
 
-    rules: List[RuleInfo] = []
+    rules: list[RuleInfo] = []
     lines = content.splitlines()
 
-    start_lines: List[int] = []
-    entries: List[Tuple[str, Any]] = []
+    start_lines: list[int] = []
+    entries: list[tuple[str, Any]] = []
     for idx, item in enumerate(data):
         if isinstance(item, dict) and len(item) == 1:
             key = next(iter(item.keys()))
@@ -177,7 +176,7 @@ def has_audit_ignore(content: str) -> bool:
     return '# audit-ignore' in content
 
 
-def find_untranslated_text_values(node: Any) -> List[str]:
+def find_untranslated_text_values(node: Any) -> list[str]:
     """
     Find lowercase text keys (t, ot, ct, spell, pronounce, ifthenelse) that should be uppercase in translations.
     Returns list of the untranslated text values found.
@@ -185,12 +184,12 @@ def find_untranslated_text_values(node: Any) -> List[str]:
     return [entry[1] for entry in find_untranslated_text_entries(node)]
 
 
-def find_untranslated_text_entries(node: Any) -> List[Tuple[str, str, Optional[int]]]:
+def find_untranslated_text_entries(node: Any) -> list[tuple[str, str, int | None]]:
     """
     Find lowercase text keys (t, ot, ct, spell, pronounce, ifthenelse) and their line numbers.
     Returns list of (key, text, line_number) entries. Line number is 1-based when available.
     """
-    entries: List[Tuple[str, str, Optional[int]]] = []
+    entries: list[tuple[str, str, int | None]] = []
     translation_keys = {"t", "ot", "ct", "spell", "pronounce", "ifthenelse"}
 
     def should_add(text: str) -> bool:
@@ -213,12 +212,12 @@ def find_untranslated_text_entries(node: Any) -> List[Tuple[str, str, Optional[i
     return entries
 
 
-def build_line_map(node: Any) -> Dict[str, List[int]]:
+def build_line_map(node: Any) -> dict[str, list[int]]:
     """
     Build a mapping of rule element types to line numbers.
     Line numbers are 1-based. Missing elements are omitted.
     """
-    line_map: Dict[str, List[int]] = {}
+    line_map: dict[str, list[int]] = {}
     structure_tokens = {
         "test",
         "if",
@@ -232,7 +231,7 @@ def build_line_map(node: Any) -> Dict[str, List[int]]:
         "intent",
     }
 
-    def add_line(kind: str, line: Optional[int]) -> None:
+    def add_line(kind: str, line: int | None) -> None:
         if line is None:
             return
         line_map.setdefault(kind, []).append(line)
@@ -260,7 +259,8 @@ def normalize_match(value: Any) -> str:
 def normalize_xpath(value: str) -> str:
     return " ".join(value.split())
 
-def dedup_list(values: List[str]) -> List[str]:
+
+def dedup_list(values: list[str]) -> list[str]:
     """
     Return a list without duplicates while preserving first-seen order.
     Originally, rule differences were stored as sets, losing their original order,
@@ -270,8 +270,7 @@ def dedup_list(values: List[str]) -> List[str]:
         >>> dedup_list(["if:a", "if:b", "if:a"])
         ['if:a', 'if:b']
     """
-
-    return list(dict.fromkeys(values)) # dict preserves insertion order (guaranteed in Python 3.7+)
+    return list(dict.fromkeys(values))  # dict preserves insertion order (guaranteed in Python 3.7+)
 
 
 def extract_match_pattern(rule_data: Any) -> str:
@@ -282,18 +281,18 @@ def extract_match_pattern(rule_data: Any) -> str:
     return ""
 
 
-def extract_conditions(rule_data: Any) -> List[str]:
+def extract_conditions(rule_data: Any) -> list[str]:
     """Extract all if/else conditions from a rule"""
-    conditions: List[str] = []
+    conditions: list[str] = []
     for key, child, _ in iter_field_matches(rule_data):
         if key in ("if", "else_if") and isinstance(child, str):
             conditions.append(child)
     return conditions
 
 
-def extract_variables(rule_data: Any) -> List[Tuple[str, str]]:
+def extract_variables(rule_data: Any) -> list[tuple[str, str]]:
     """Extract variable definitions from a rule"""
-    variables: List[Tuple[str, str]] = []
+    variables: list[tuple[str, str]] = []
 
     def add_from_value(value: Any) -> None:
         if isinstance(value, dict):
@@ -311,9 +310,9 @@ def extract_variables(rule_data: Any) -> List[Tuple[str, str]]:
     return variables
 
 
-def extract_structure_elements(rule_data: Any) -> List[str]:
+def extract_structure_elements(rule_data: Any) -> list[str]:
     """Extract structural elements (test, with, replace blocks) ignoring text content"""
-    elements: List[str] = []
+    elements: list[str] = []
     tokens = {"test", "if", "else_if", "then", "else", "then_test", "else_test", "with", "replace", "intent"}
     for key, _, _ in iter_field_matches(rule_data):
         if key in tokens:
@@ -321,7 +320,7 @@ def extract_structure_elements(rule_data: Any) -> List[str]:
     return elements
 
 
-def diff_rules(english_rule: RuleInfo, translated_rule: RuleInfo) -> List[RuleDifference]:
+def diff_rules(english_rule: RuleInfo, translated_rule: RuleInfo) -> list[RuleDifference]:
     """
     Compare two rules and return fine-grained differences.
     Ignores text content differences (T/t values) but catches structural changes.

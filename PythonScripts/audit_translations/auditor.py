@@ -8,7 +8,7 @@ and for performing full language audits.
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional, TextIO, Tuple
+from typing import TextIO
 
 from rich.panel import Panel
 from rich.table import Table
@@ -26,7 +26,7 @@ def normalize_language(language: str) -> str:
     return language.lower().replace("_", "-")
 
 
-def split_language(language: str) -> Tuple[str, Optional[str]]:
+def split_language(language: str) -> tuple[str, str | None]:
     """Split a language code into base and optional region."""
     normalized = normalize_language(language)
     if "-" in normalized:
@@ -35,7 +35,7 @@ def split_language(language: str) -> Tuple[str, Optional[str]]:
     return normalized, None
 
 
-def get_rules_dir(rules_dir: Optional[str] = None) -> Path:
+def get_rules_dir(rules_dir: str | None = None) -> Path:
     """Get the Rules/Languages directory path"""
     if rules_dir:
         return Path(rules_dir).expanduser()
@@ -44,7 +44,7 @@ def get_rules_dir(rules_dir: Optional[str] = None) -> Path:
     return package_dir.parent.parent / "Rules" / "Languages"
 
 
-def get_yaml_files(lang_dir: Path, region_dir: Optional[Path] = None) -> List[Path]:
+def get_yaml_files(lang_dir: Path, region_dir: Path | None = None) -> list[Path]:
     """Get all YAML files to audit for a language, including region overrides."""
     files: set[Path] = set()
 
@@ -69,19 +69,19 @@ def get_yaml_files(lang_dir: Path, region_dir: Optional[Path] = None) -> List[Pa
 def compare_files(
     english_path: str,
     translated_path: str,
-    issue_filter: Optional[set[str]] = None,
-    translated_region_path: Optional[str] = None,
-    english_region_path: Optional[str] = None,
+    issue_filter: set[str] | None = None,
+    translated_region_path: str | None = None,
+    english_region_path: str | None = None,
 ) -> ComparisonResult:
     """Compare English and translated YAML files"""
 
-    def load_rules(path: Optional[str]) -> List[RuleInfo]:
+    def load_rules(path: str | None) -> list[RuleInfo]:
         if path and Path(path).exists():
             rules, _ = parse_yaml_file(path)
             return rules
         return []
 
-    def merge_rules(base_rules: List[RuleInfo], region_rules: List[RuleInfo]) -> List[RuleInfo]:
+    def merge_rules(base_rules: list[RuleInfo], region_rules: list[RuleInfo]) -> list[RuleInfo]:
         if not region_rules:
             return base_rules
         merged = {r.key: r for r in base_rules}
@@ -152,11 +152,11 @@ def compare_files(
 
 def audit_language(
     language: str,
-    specific_file: Optional[str] = None,
+    specific_file: str | None = None,
     output_format: str = "rich",
-    output_path: Optional[str] = None,
-    rules_dir: Optional[str] = None,
-    issue_filter: Optional[set[str]] = None,
+    output_path: str | None = None,
+    rules_dir: str | None = None,
+    issue_filter: set[str] | None = None,
     verbose: bool = False,
 ) -> int:
     """Audit translations for a specific language. Returns total issue count."""
@@ -264,7 +264,7 @@ def audit_language(
     return total_issues
 
 
-def list_languages(rules_dir: Optional[str] = None):
+def list_languages(rules_dir: str | None = None):
     """List available languages for auditing"""
     console.print(Panel("Available Languages", style="bold cyan"))
 

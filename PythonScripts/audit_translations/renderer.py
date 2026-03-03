@@ -7,7 +7,7 @@ and the IssueWriter interface.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from rich.console import Console
 from rich.markup import escape
@@ -25,7 +25,7 @@ def rule_label(rule: RuleInfo) -> str:
     return f"[cyan]{escape(rule.name)}[/] [dim]({escape(tag)})[/]"
 
 
-def issue_type_sort_key(issue_type: str) -> Tuple[int, str]:
+def issue_type_sort_key(issue_type: str) -> tuple[int, str]:
     """
     Stable ordering for per-rule issue groups.
 
@@ -179,9 +179,9 @@ def print_warnings(
     console.print(f"  [dim]English: {result.english_rule_count} rules  →  Translated: {result.translated_rule_count} rules[/]")
     console.rule(style="cyan")
 
-    grouped_issues: Dict[str, Dict[str, Any]] = {}
+    grouped_issues: dict[str, dict[str, Any]] = {}
 
-    def add_issue(rule: RuleInfo, issue_type: str, payload: Dict[str, Any]) -> None:
+    def add_issue(rule: RuleInfo, issue_type: str, payload: dict[str, Any]) -> None:
         if rule.key not in grouped_issues:
             grouped_issues[rule.key] = {"rule": rule, "by_type": {}}
         grouped_issues[rule.key]["by_type"].setdefault(issue_type, []).append(payload)
@@ -219,7 +219,7 @@ def print_warnings(
         )
         for group in grouped_issues.values():
             rule = group["rule"]
-            by_type: Dict[str, List[Dict[str, Any]]] = group["by_type"]
+            by_type: dict[str, list[dict[str, Any]]] = group["by_type"]
             console.print(f"      [dim]•[/] {rule_label(rule)}")
             for issue_type in sorted(by_type.keys(), key=issue_type_sort_key):
                 entries = by_type[issue_type]

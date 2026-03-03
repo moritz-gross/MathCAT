@@ -4,13 +4,11 @@ Line number resolution for rule differences.
 Maps rule diff types and structure tokens to precise YAML source line numbers.
 """
 
-from typing import List, Optional, Tuple
-
 from .dataclasses import RuleInfo, RuleDifference
 from .parsers import extract_structure_elements
 
 
-def _get_line_map_lines(rule: RuleInfo, kind: str, token: Optional[str] = None) -> List[int]:
+def _get_line_map_lines(rule: RuleInfo, kind: str, token: str | None = None) -> list[int]:
     """Return the line-number list for a given element kind from the rule's line map."""
     if kind == "match":
         return rule.line_map.get("match", [])
@@ -24,9 +22,9 @@ def _get_line_map_lines(rule: RuleInfo, kind: str, token: Optional[str] = None) 
 
 
 def first_structure_mismatch(
-    english_tokens: List[str],
-    translated_tokens: List[str],
-) -> Tuple[Optional[str], Optional[str], int]:
+    english_tokens: list[str],
+    translated_tokens: list[str],
+) -> tuple[str | None, str | None, int]:
     """
     Find the first structural mismatch between two token lists.
 
@@ -47,9 +45,9 @@ def first_structure_mismatch(
 def resolve_issue_line_at_position(
     rule: RuleInfo,
     kind: str,
-    token: Optional[str] = None,
+    token: str | None = None,
     position: int = 0,
-) -> Optional[int]:
+) -> int | None:
     """
     Resolve the line number for a specific occurrence of an element within a rule.
 
@@ -66,7 +64,7 @@ def resolve_issue_line_at_position(
     return lines[position] if position < len(lines) else None
 
 
-def resolve_issue_line(rule: RuleInfo, kind: str, token: Optional[str] = None) -> Optional[int]:
+def resolve_issue_line(rule: RuleInfo, kind: str, token: str | None = None) -> int | None:
     """
     Resolve the line number for an issue within a rule.
 
@@ -80,7 +78,7 @@ def resolve_issue_line(rule: RuleInfo, kind: str, token: Optional[str] = None) -
     return lines[0] if lines else rule.line_number
 
 
-def structure_token_occurrence_index(tokens: List[str], position: int) -> Optional[int]:
+def structure_token_occurrence_index(tokens: list[str], position: int) -> int | None:
     """
     Return which occurrence of a token appears at a given absolute token position.
 
@@ -92,7 +90,7 @@ def structure_token_occurrence_index(tokens: List[str], position: int) -> Option
     return sum(1 for current in tokens[:position] if current == token)
 
 
-def resolve_structure_issue_lines(diff: RuleDifference) -> Optional[Tuple[int, int]]:
+def resolve_structure_issue_lines(diff: RuleDifference) -> tuple[int, int] | None:
     """
     Resolve stable line anchors for a structural rule difference.
 
@@ -147,7 +145,7 @@ def resolve_structure_issue_lines(diff: RuleDifference) -> Optional[Tuple[int, i
     return line_en, line_tr
 
 
-def resolve_diff_lines(diff: RuleDifference) -> Optional[Tuple[Optional[int], Optional[int]]]:
+def resolve_diff_lines(diff: RuleDifference) -> tuple[int | None, int | None] | None:
     """
     Resolve issue line numbers for a rule difference.
 
