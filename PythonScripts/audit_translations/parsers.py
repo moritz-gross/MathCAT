@@ -4,7 +4,7 @@ YAML file parsing functions.
 Handles parsing of rule files and unicode files to extract rule information.
 """
 
-import os
+from pathlib import Path
 from typing import Any, Iterator
 
 from jsonpath_ng.ext import parse
@@ -14,10 +14,16 @@ from ruamel.yaml.scanner import ScannerError
 
 from .dataclasses import RuleInfo, RuleDifference
 
+_yaml = YAML()
+_yaml.preserve_quotes = True
+
+_ALL_FIELDS_EXPR = parse('$..*') # '..' is recursive descent
+_MATCH_EXPR = parse('$.match')
+
 
 def is_unicode_file(file_path: str) -> bool:
     """Check if this is a unicode.yaml or unicode-full.yaml file"""
-    basename = os.path.basename(file_path)
+    basename = Path(file_path).name
     return basename in ("unicode.yaml", "unicode-full.yaml")
 
 
@@ -32,16 +38,14 @@ def parse_yaml_file(file_path: str, strict: bool = False) -> tuple[list[RuleInfo
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    yaml = YAML()
-    yaml.preserve_quotes = True
     try:
-        data = yaml.load(content)
+        data = _yaml.load(content)
     except ScannerError as exc:
         if strict:
             raise exc
         if "\t" in content:
             sanitized = content.replace("\t", "    ")
-            data = yaml.load(sanitized)
+            data = _yaml.load(sanitized)
         else:
             raise exc
 
@@ -88,9 +92,7 @@ def iter_field_matches(node: Any) -> Iterator[tuple[str, Any, Any]]:
 
     Returns tuples of (key, child_value, parent_mapping) in traversal order.
     """
-    all_fields_expr = parse('$..*')  # '..' is recursive descent
-
-    for match in all_fields_expr.find(node):
+    for match in _ALL_FIELDS_EXPR.find(node):
         path = match.path
         if isinstance(path, Fields) and len(path.fields) == 1:
             key = path.fields[0]
@@ -275,7 +277,7 @@ def dedup_list(values: list[str]) -> list[str]:
 
 def extract_match_pattern(rule_data: Any) -> str:
     if isinstance(rule_data, dict):
-        matches = parse('$.match').find(rule_data)
+        matches = _MATCH_EXPR.find(rule_data)
         if matches:
             return normalize_match(matches[0].value)
     return ""

@@ -21,14 +21,9 @@ from .renderer import collect_issues, console, print_warnings
 __all__ = ["console"]
 
 
-def normalize_language(language: str) -> str:
-    """Return a normalized language code (lowercase, '-' separators)."""
-    return language.lower().replace("_", "-")
-
-
-def split_language(language: str) -> tuple[str, str | None]:
+def split_language_into_base_and_region(language: str) -> tuple[str, str | None]:
     """Split a language code into base and optional region."""
-    normalized = normalize_language(language)
+    normalized = language.lower().replace("_", "-")
     if "-" in normalized:
         base, region = normalized.split("-", 1)
         return base, region or None
@@ -163,7 +158,7 @@ def audit_language(
     rules_dir_path = get_rules_dir(rules_dir)
     english_dir = rules_dir_path / "en"
 
-    base_language, region = split_language(language)
+    base_language, region = split_language_into_base_and_region(language)
     translated_dir = rules_dir_path / base_language
     translated_region_dir = translated_dir / region if region else None
     english_region_dir = english_dir / region if region else None

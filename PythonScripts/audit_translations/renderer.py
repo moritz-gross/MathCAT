@@ -5,7 +5,6 @@ Handles all output concerns: rich terminal display, JSONL issue normalization,
 and the IssueWriter interface.
 """
 
-import json
 from pathlib import Path
 from typing import Any
 
