@@ -44,9 +44,12 @@ def test_resolve_diff_lines_uses_line_map_and_falls_back_to_rule_line():
 
     def make_match_diff(en, tr):
         return RuleDifference(
-            english_rule=en, translated_rule=tr,
-            diff_type="match", description="Match differs",
-            english_snippet="a", translated_snippet="b",
+            english_rule=en,
+            translated_rule=tr,
+            diff_type="match",
+            description="Match differs",
+            english_snippet="a",
+            translated_snippet="b",
         )
 
     assert resolve_diff_lines(make_match_diff(en_with_map, tr_with_map)) == (10, 20)

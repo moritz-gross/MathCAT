@@ -19,7 +19,7 @@ console = Console()
 
 def rule_label(rule: RuleInfo) -> str:
     if rule.name is None:
-        return f"[yellow]\"{escape(rule.key)}\"[/]"
+        return f'[yellow]"{escape(rule.key)}"[/]'
     tag = rule.tag or "unknown"
     return f"[cyan]{escape(rule.name)}[/] [dim]({escape(tag)})[/]"
 
@@ -170,8 +170,13 @@ def print_warnings(
     if not result.has_issues:
         return issues
 
-    style, icon = ("green", "✓") if result.translated_rule_count == result.english_rule_count else \
-                  ("red", "✗") if result.translated_rule_count == 0 else ("yellow", "⚠")
+    style, icon = (
+        ("green", "✓")
+        if result.translated_rule_count == result.english_rule_count
+        else ("red", "✗")
+        if result.translated_rule_count == 0
+        else ("yellow", "⚠")
+    )
     console.print()
     console.rule(style="cyan")
     console.print(f"[{style}]{icon}[/] [bold]{escape(display_name)}[/]")
@@ -207,11 +212,7 @@ def print_warnings(
         add_issue(rule, "extra_rule", {"line_tr": rule.line_number})
 
     if grouped_issues:
-        total_grouped_issues = sum(
-            len(entries)
-            for group in grouped_issues.values()
-            for entries in group["by_type"].values()
-        )
+        total_grouped_issues = sum(len(entries) for group in grouped_issues.values() for entries in group["by_type"].values())
         console.print(
             f"\n  [magenta]≠[/] [bold]Rule Issues[/] "
             f"[[magenta]{total_grouped_issues}[/]] [dim](grouped by rule and issue type)[/]"
@@ -222,25 +223,18 @@ def print_warnings(
             console.print(f"      [dim]•[/] {rule_label(rule)}")
             for issue_type in sorted(by_type.keys(), key=issue_type_sort_key):
                 entries = by_type[issue_type]
-                console.print(
-                    f"          [dim]{issue_type_label(issue_type)} "
-                    f"[{len(entries)}][/]"
-                )
+                console.print(f"          [dim]{issue_type_label(issue_type)} [{len(entries)}][/]")
                 for entry in entries:
                     if issue_type == "missing_rule":
-                        console.print(
-                            f"              [dim]•[/] [dim](line {entry['line_en']} in English)[/]"
-                        )
+                        console.print(f"              [dim]•[/] [dim](line {entry['line_en']} in English)[/]")
                         issues += 1
                     elif issue_type == "extra_rule":
-                        console.print(
-                            f"              [dim]•[/] [dim](line {entry['line_tr']} in {target_label})[/]"
-                        )
+                        console.print(f"              [dim]•[/] [dim](line {entry['line_tr']} in {target_label})[/]")
                         issues += 1
                     elif issue_type == "untranslated_text":
                         console.print(
                             f"              [dim]•[/] [dim](line {entry['line_tr']} {target_label})[/] "
-                            f"[yellow]\"{escape(entry['text'])}\"[/]"
+                            f'[yellow]"{escape(entry["text"])}"[/]'
                         )
                         issues += 1
                     else:

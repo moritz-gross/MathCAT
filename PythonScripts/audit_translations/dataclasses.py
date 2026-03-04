@@ -38,9 +38,10 @@ class RuleInfo:
     audit_ignore : bool
         True if the raw content contains an audit-ignore marker.
     """
+
     name: str | None  # None for unicode entries
-    tag: str | None   # None for unicode entries
-    key: str          # For unicode entries, this is the character/range
+    tag: str | None  # None for unicode entries
+    key: str  # For unicode entries, this is the character/range
     line_number: int
     raw_content: str
     data: Any | None = None
@@ -60,6 +61,7 @@ class RuleInfo:
 @dataclass
 class RuleDifference:
     """Fine-grained difference between English and translated rule"""
+
     english_rule: RuleInfo
     translated_rule: RuleInfo
     diff_type: str  # 'match', 'condition', 'structure', 'variables'
@@ -71,8 +73,9 @@ class RuleDifference:
 @dataclass
 class ComparisonResult:
     """Results from comparing English and translated files"""
-    missing_rules: list[RuleInfo]           # Rules in English but not in translation
-    extra_rules: list[RuleInfo]             # Rules in translation but not in English
+
+    missing_rules: list[RuleInfo]  # Rules in English but not in translation
+    extra_rules: list[RuleInfo]  # Rules in translation but not in English
     untranslated_text: list[tuple[RuleInfo, list[tuple[str, str, int | None]]]]  # Rules with lowercase t/ot/ct
     file_path: str
     english_rule_count: int

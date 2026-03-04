@@ -11,10 +11,11 @@ from ..renderer import collect_issues
 def load_jsonl(text: str) -> list[dict]:
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
+
 def load_json_array(path: Path) -> list[dict]:
     items = json.loads(path.read_text(encoding="utf-8"))
     for item in items:
-        item.pop("_explanation", None) # only for humans
+        item.pop("_explanation", None)  # only for humans
     return items
 
 

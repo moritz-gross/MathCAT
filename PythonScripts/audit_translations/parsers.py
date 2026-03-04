@@ -17,8 +17,8 @@ from .dataclasses import RuleInfo, RuleDifference
 _yaml = YAML()
 _yaml.preserve_quotes = True
 
-_ALL_FIELDS_EXPR = parse('$..*') # '..' is recursive descent
-_MATCH_EXPR = parse('$.match')
+_ALL_FIELDS_EXPR = parse("$..*")  # '..' is recursive descent
+_MATCH_EXPR = parse("$.match")
 
 
 def is_unicode_file(file_path: str) -> bool:
@@ -35,7 +35,7 @@ def parse_yaml_file(file_path: str, strict: bool = False) -> tuple[list[RuleInfo
     For standard rule files: extracts rules with name/tag
     For unicode files: extracts entries with character/range keys
     """
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     try:
@@ -122,17 +122,19 @@ def parse_rules_file(content: str, data: Any) -> list[RuleInfo]:
         rule_name = str(item.get("name"))
         tag = format_tag(item.get("tag"))
         rule_key = f"{rule_name}|{tag or 'unknown'}"
-        rules.append(RuleInfo(
-            name=rule_name,
-            tag=tag,
-            key=rule_key,
-            line_number=line_idx + 1,
-            raw_content=raw_content,
-            data=item,
-            untranslated_entries=find_untranslated_text_entries(item),
-            line_map=build_line_map(item),
-            audit_ignore=has_audit_ignore(raw_content)
-        ))
+        rules.append(
+            RuleInfo(
+                name=rule_name,
+                tag=tag,
+                key=rule_key,
+                line_number=line_idx + 1,
+                raw_content=raw_content,
+                data=item,
+                untranslated_entries=find_untranslated_text_entries(item),
+                line_map=build_line_map(item),
+                audit_ignore=has_audit_ignore(raw_content),
+            )
+        )
 
     return rules
 
@@ -158,24 +160,26 @@ def parse_unicode_file(content: str, data: Any) -> list[RuleInfo]:
     raw_blocks = build_raw_blocks(lines, start_lines)
 
     for (char_key, value), raw_content, line_idx in zip(entries, raw_blocks, start_lines):
-        rules.append(RuleInfo(
-            name=None,
-            tag=None,
-            key=char_key,
-            line_number=line_idx + 1,
-            raw_content=raw_content,
-            data=value,
-            untranslated_entries=find_untranslated_text_entries(value),
-            line_map=build_line_map(value),
-            audit_ignore=has_audit_ignore(raw_content)
-        ))
+        rules.append(
+            RuleInfo(
+                name=None,
+                tag=None,
+                key=char_key,
+                line_number=line_idx + 1,
+                raw_content=raw_content,
+                data=value,
+                untranslated_entries=find_untranslated_text_entries(value),
+                line_map=build_line_map(value),
+                audit_ignore=has_audit_ignore(raw_content),
+            )
+        )
 
     return rules
 
 
 def has_audit_ignore(content: str) -> bool:
     """Check if the rule content contains an audit-ignore comment"""
-    return '# audit-ignore' in content
+    return "# audit-ignore" in content
 
 
 def find_untranslated_text_values(node: Any) -> list[str]:
@@ -199,16 +203,12 @@ def find_untranslated_text_entries(node: Any) -> list[tuple[str, str, int | None
             return False
         if len(text) == 1 and not text.isalpha():
             return False
-        if text.startswith('$') or text.startswith('@'):
+        if text.startswith("$") or text.startswith("@"):
             return False
         return True
 
     for key, child, parent in iter_field_matches(node):
-        if (
-            key.lower() in translation_keys
-            and not key.isupper()
-            and isinstance(child, str)
-        ):
+        if key.lower() in translation_keys and not key.isupper() and isinstance(child, str):
             if should_add(child):
                 entries.append((key, child, mapping_key_line(parent, key)))
     return entries
@@ -334,14 +334,16 @@ def diff_rules(english_rule: RuleInfo, translated_rule: RuleInfo) -> list[RuleDi
     en_match = normalize_xpath(en_match_raw)
     translated_match = normalize_xpath(translated_match_raw)
     if en_match != translated_match and en_match and translated_match:
-        differences.append(RuleDifference(
-            english_rule=english_rule,
-            translated_rule=translated_rule,
-            diff_type='match',
-            description='Match pattern differs',
-            english_snippet=en_match,
-            translated_snippet=translated_match
-        ))
+        differences.append(
+            RuleDifference(
+                english_rule=english_rule,
+                translated_rule=translated_rule,
+                diff_type="match",
+                description="Match pattern differs",
+                english_snippet=en_match,
+                translated_snippet=translated_match,
+            )
+        )
 
     # Check condition differences
     en_conditions_raw = extract_conditions(english_rule.data)
@@ -352,14 +354,16 @@ def diff_rules(english_rule: RuleInfo, translated_rule: RuleInfo) -> list[RuleDi
         # Find specific differences
         en_set, tr_set = set(en_conditions), set(tr_conditions)
         if en_set != tr_set:
-            differences.append(RuleDifference(
-                english_rule=english_rule,
-                translated_rule=translated_rule,
-                diff_type='condition',
-                description='Conditions differ',
-                english_snippet=', '.join(dedup_list(en_conditions)) or '(none)',
-                translated_snippet=', '.join(dedup_list(tr_conditions)) or '(none)'
-            ))
+            differences.append(
+                RuleDifference(
+                    english_rule=english_rule,
+                    translated_rule=translated_rule,
+                    diff_type="condition",
+                    description="Conditions differ",
+                    english_snippet=", ".join(dedup_list(en_conditions)) or "(none)",
+                    translated_snippet=", ".join(dedup_list(tr_conditions)) or "(none)",
+                )
+            )
 
     # Check variable differences
     en_vars = extract_variables(english_rule.data)
@@ -368,26 +372,30 @@ def diff_rules(english_rule: RuleInfo, translated_rule: RuleInfo) -> list[RuleDi
         en_var_names = {v[0] for v in en_vars}
         tr_var_names = {v[0] for v in tr_vars}
         if en_var_names != tr_var_names:
-            differences.append(RuleDifference(
-                english_rule=english_rule,
-                translated_rule=translated_rule,
-                diff_type='variables',
-                description='Variable definitions differ',
-                english_snippet=', '.join(sorted(en_var_names)) or '(none)',
-                translated_snippet=', '.join(sorted(tr_var_names)) or '(none)'
-            ))
+            differences.append(
+                RuleDifference(
+                    english_rule=english_rule,
+                    translated_rule=translated_rule,
+                    diff_type="variables",
+                    description="Variable definitions differ",
+                    english_snippet=", ".join(sorted(en_var_names)) or "(none)",
+                    translated_snippet=", ".join(sorted(tr_var_names)) or "(none)",
+                )
+            )
 
     # Check structural differences (test/if/then/else blocks)
     en_structure = extract_structure_elements(english_rule.data)
     tr_structure = extract_structure_elements(translated_rule.data)
     if en_structure != tr_structure:
-        differences.append(RuleDifference(
-            english_rule=english_rule,
-            translated_rule=translated_rule,
-            diff_type='structure',
-            description='Rule structure differs (test/if/then/else blocks)',
-            english_snippet=' '.join(en_structure),
-            translated_snippet=' '.join(tr_structure)
-        ))
+        differences.append(
+            RuleDifference(
+                english_rule=english_rule,
+                translated_rule=translated_rule,
+                diff_type="structure",
+                description="Rule structure differs (test/if/then/else blocks)",
+                english_snippet=" ".join(en_structure),
+                translated_snippet=" ".join(tr_structure),
+            )
+        )
 
     return differences

@@ -141,7 +141,7 @@ def compare_files(
         rule_differences=rule_differences,
         file_path=translated_path,
         english_rule_count=len(english_rules),
-        translated_rule_count=len(translated_rules)
+        translated_rule_count=len(translated_rules),
     )
 
 
