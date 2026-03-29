@@ -630,7 +630,7 @@
       - if: "*[1][.='log']"
         then: [T: "log"]
       - else_if: $ClearSpeak_Log = 'LnAsNaturalLog'
-        then: [T:  "Natürliche Logarithmus"]
+        then: [T:  "natürlicher Logarithmus"]
         else: [spell: "'ln'"]
       else:
       - test:
@@ -640,7 +640,7 @@
         - if: "*[1][.='log']"
           then: [T: "log"]
         - else_if: $ClearSpeak_Log = 'LnAsNaturalLog'
-          then: [T: "Natürliche Logarithmus"]
+          then: [T: "natürliche Logarithmus"]
           else: [spell: "'ln'"]
       - T: "von"
       - pause: short
@@ -722,7 +722,7 @@
     - test:
         if: "self::m:mlabeledtr"
         then:
-          - t: "with label"      # phrase(the diagram is complete 'with label')
+          - t: "mit Beschriftung"      # phrase(the diagram is complete 'with label')
           - x: "*[1]/*"
     - test:
         - if: "$ClearSpeak_MultiLineLabel='None'"
