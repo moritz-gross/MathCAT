@@ -2249,8 +2249,8 @@
  - "⪲": [T: "Erfolg über Single-Line nicht gleich"]	#  0x2ab2	(en: 'succeeds above single line not equal to', google: 'nachfolger über eine einzelne linie nicht gleich')
  - "⪳": [T: "Vorangegangenes Gleichheitszeichen"]	#  0x2ab3	(en: 'precedes above equals sign', google: 'vor dem gleichen vorzeichen voraus')
  - "⪴": [T: "Erfolgreich über Gleichheitszeichen"]	#  0x2ab4	(en: 'succeeds above equals sign', google: 'nachfolger über gleiches zeichen')
- - "⪵": [T: "precedes but not equal to"]        	#  0x2ab5	(en: 'precedes above not equal to')
- - "⪶": [T: "succeeds but not equal to"]        	#  0x2ab6	(en: 'succeeds above not equal to')
+ - "⪵": [T: "vorangehend, aber nicht gleich"]   	#  0x2ab5	(en: 'precedes above not equal to')
+ - "⪶": [T: "nachfolgend, aber nicht gleich"]   	#  0x2ab6	(en: 'succeeds above not equal to')
  - "⪷": [T: "Vorangegangenes fast gleich zu"]   	#  0x2ab7	(en: 'precedes above almost equal to', google: 'vor voraussichtlich fast gleich gleich')
  - "⪸": [T: "Erreicht über fast gleich viel"]   	#  0x2ab8	(en: 'succeeds above almost equal to', google: 'erfolgreich ist über fast gleich')
  - "⪹": [T: "Vorangegangene nicht annähernd gleich"]	#  0x2ab9	(en: 'precedes above not almost equal to', google: 'vorkommen oben nicht annähernd gleich')
@@ -2314,7 +2314,7 @@
  - "⫳": [T: "Parallel zu Tilde Operator"]       	#  0x2af3	(en: 'parallel with tilde operator', MathPlayer: 'parallel with tilde operator', google: 'parallel zum tilde -operator')
  - "⫴": [T: "Dreifache vertikale Balken-Binärbeziehung"]	#  0x2af4	(en: 'triple vertical bar binary relation', google: 'triple vertical bar binärbeziehung')
  - "⫵": [T: "Dreifacher vertikaler Strich mit horizontalem Hub"]	#  0x2af5	(en: 'triple vertical bar with horizontal stroke', google: 'dreifache vertikale balken mit horizontalem schlaganfall')
- - "⫶": [T: "Triple Colon Operator"]            	#  0x2af6	(en: 'triple colon operator', google: 'dreifacher dickdarmbetreiber')
+ - "⫶": [T: "dreifacher doppelpunkt-operator"]  	#  0x2af6	(en: 'triple colon operator', google: 'dreifacher dickdarmbetreiber')
  - "⫷": [T: "Dreifach verschachtelt weniger als"]	#  0x2af7	(en: 'triple nested less than', google: 'dreifach verschachtelte weniger als')
  - "⫸": [T: "Dreifach verschachteltes Größeres als"]	#  0x2af8	(en: 'triple nested greater than', google: 'dreifach verschachteltes als')
  - "⫹": [T: "Doppellinie schräg, weniger als oder gleich"]	#  0x2af9	(en: 'double line slanted less than or equal to', google: 'doppelzeile, die weniger oder gleich sind')
@@ -2323,8 +2323,8 @@
  - "⫼": [T: "Großer dreifacher vertikaler Barbediener"]	#  0x2afc	(en: 'large triple vertical bar operator', google: 'großer dreifacher vertikaler barbetreiber')
  - "⫽": [T: "Doppelter Schrägstrich-Operator"]  	#  0x2afd	(en: 'double solidus operator', google: 'doppeler solidus -operator')
  - "⫾": [T: "Weiße vertikale Leiste"]           	#  0x2afe	(en: 'white vertical bar', google: 'weiße vertikale balken')
- - "⫿": [T: "N-Ary White Vertical Bar"]         	#  0x2aff	(en: 'white vertical bar', google: 'weiße vertikale balken')
- - "⬀": [T: "North East White Arrow"]           	#  0x2b00	(en: 'north east white arrow', google: 'north east white arrow')
+ - "⫿": [T: "n-ary weiße vertikale leiste"]     	#  0x2aff	(en: 'white vertical bar', google: 'weiße vertikale balken')
+ - "⬀": [T: "weißer Nordostpfeil"]              	#  0x2b00	(en: 'north east white arrow', google: 'north east white arrow')
  - "⬁": [T: "Nordwestlicher weißer Pfeil"]      	#  0x2b01	(en: 'north west white arrow', google: 'north west white arrow')
  - "⬂": [T: "Südostweißer Pfeil"]               	#  0x2b02	(en: 'south east white arrow', google: 'südostweißer pfeil')
  - "⬃": [T: "Südwestweißer Pfeil"]              	#  0x2b03	(en: 'south west white arrow', google: 'south west white arrow')
@@ -3437,7 +3437,7 @@
  - "-":                                       	#  0xf3ea - 0xf403
     - spell: "translate('.', '', 'abcdefghijklmnopqrstuvwxyz')"
 
- - "": [T: "dotless i"]                        	#  0xf404	(google translation)
+ - "": [T: "punktloses i"]                     	#  0xf404	(google translation)
  - "𝚤": [T: "punktloses i kursiv"]              	#  0x1d6a4	(en: 'dotless i', google: 'dotless i')
  - "𝚥": [T: "punktloses j kursiv"]              	#  0x1d6a5	(en: 'dotless j', google: 'dotless j')
 
