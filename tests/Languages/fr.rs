@@ -4,4 +4,5 @@ mod SimpleSpeak {
     mod functions;
 }
 
+mod shared;
 mod alphabets;
