@@ -9,3 +9,12 @@ If you run from the repo root instead of inside `PythonScripts`, point uv at the
 uv sync --project PythonScripts
 uv run --project PythonScripts audit-translations de
 ```
+
+To run rule YAML coverage from the repo root, use the audit tool:
+
+```bash
+uv run --project PythonScripts audit-translations --rule-coverage
+```
+
+The tool opens `target/rule-coverage/index.html` in a browser when the run finishes. Expand a YAML file to see each active rule's name, tag, and match status.
+The Markdown report and test output remain at `target/rule-coverage/report.md` and `target/rule-coverage/test.log`.

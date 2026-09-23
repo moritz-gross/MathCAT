@@ -12,6 +12,7 @@ exclude = ["src/main.rs", "docs", "BrailleDocs", "PythonScripts"]    # should ha
 
 
 [features]
+"rule-coverage" = []
 "include-zip" = []
 "enable-logs" = ["android_logger"]
 "tts" = [ "natural-tts" ]

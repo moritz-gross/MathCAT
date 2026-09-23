@@ -66,11 +66,13 @@ The tool automatically adjusts its matching logic based on the file type:
 uv run audit-translations <language> [--file <specific_file>]
 uv run audit-translations <language> --source <source-language>
 uv run audit-translations --list
+uv run audit-translations --rule-coverage
 
 # If running from the repo root, point uv at the project:
 uv run --project PythonScripts audit-translations <language>
 uv run --project PythonScripts audit-translations <language> --source <source-language>
 uv run --project PythonScripts audit-translations --list
+uv run --project PythonScripts audit-translations --rule-coverage
 ```
 
 **Convenience Features:**
@@ -81,6 +83,7 @@ uv run --project PythonScripts audit-translations --list
 * `--rules-dir`: Override the Rules/Languages directory path.
 * `--only`: Filter issue types (comma-separated): `missing`, `untranslated`, `extra`, `diffs`, `all`.
 * `--verbose`: Show detailed output including source/target snippets for rule differences.
+* `--rule-coverage`: Run the full Rust test suite, generate file- and rule-level YAML coverage under `target/rule-coverage/`, and open the HTML report. Expand a file to inspect matched and unmatched rules by name and tag. This runs independently of a language audit.
 * **Summary Stats:** Provides a statistical summary after every run.
 
 **Examples:**
