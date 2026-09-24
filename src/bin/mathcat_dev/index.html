@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MathCAT Workbench</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-name">MathCAT</span><span class="brand-divider">/</span><span>Workbench</span></div>
+    <div class="header-meta"><span id="version"></span><span class="session-indicator">Local only</span></div>
+  </header>
+
+  <main class="workspace">
+    <div class="work-area">
+      <section class="work-section input-section">
+        <div class="section-heading"><div><span class="eyebrow">01 / Source</span><h2>MathML input</h2></div><div class="actions"><button id="run" class="primary">Run expression <span aria-hidden="true">↵</span></button></div></div>
+        <textarea id="input" spellcheck="false" aria-label="MathML input"></textarea>
+        <div class="editor-footer"><span>MathML · 1 MB maximum</span><span>Ctrl+Enter to run</span></div>
+      </section>
+
+      <section class="work-section preview-section">
+        <div class="section-heading"><div><span class="eyebrow">02 / Preview</span><h2>Rendered math</h2></div><span id="display-status" class="status">No expression</span></div>
+        <iframe id="preview" title="Rendered MathML" sandbox=""></iframe>
+        <p class="section-note">Browser rendering of MathCAT’s canonical MathML.</p>
+      </section>
+
+      <div class="result-grid">
+        <section class="work-section result-section">
+          <div class="section-heading"><div><span class="eyebrow">03 / Output</span><h2>Speech</h2></div></div>
+          <pre id="speech" class="result-text"></pre>
+          <details class="inline-detail"><summary>Inspect SSML</summary><pre id="ssml" class="code-block"></pre></details>
+        </section>
+        <section class="work-section result-section">
+          <div class="section-heading"><div><span class="eyebrow">04 / Output</span><h2>Braille</h2></div><span class="format-tag">Unicode</span></div>
+          <pre id="braille" class="result-text braille"></pre>
+        </section>
+      </div>
+
+      <section class="work-section navigation-section">
+        <div class="section-heading"><div><span class="eyebrow">05 / Explore</span><h2>Navigation</h2></div><span id="nav-status" class="status">Submit an expression</span></div>
+        <div class="nav-buttons"><button data-command="MovePrevious">← Previous</button><button data-command="MoveNext">Next →</button><button data-command="ZoomIn">Zoom in</button><button data-command="ZoomOut">Zoom out</button><button data-command="ReadCurrent">Read current</button><button data-command="WhereAmI">Where am I?</button></div>
+        <div class="nav-detail">
+          <div><h3>Navigation speech</h3><pre id="nav-speech" class="result-text compact"></pre></div>
+          <div><h3>Focused node</h3><p id="node-id" class="metadata"></p><pre id="focused-mathml" class="code-block"></pre><p id="braille-range" class="metadata"></p><pre id="highlighted-braille" class="result-text braille compact"></pre></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="inspector" aria-label="MathCAT inspector">
+      <div class="pane-heading"><div><span class="eyebrow">Engine</span><h2>Inspector</h2></div><button id="reload" class="quiet">Reload rules</button></div>
+      <section class="inspector-section preferences-section"><div class="inspector-heading"><h3>Preferences</h3><span class="section-index">01</span></div>
+        <div class="settings-grid">
+          <label>Language<select id="language"></select></label>
+          <label>Speech style<select id="speechStyle"></select></label>
+          <label>Speech verbosity<select id="verbosity"><option>Terse</option><option>Medium</option><option>Verbose</option></select></label>
+          <label>Braille code<select id="brailleCode"></select></label>
+          <label>Navigation mode<select id="navMode"><option>Enhanced</option><option>Simple</option><option>Character</option></select></label>
+        </div>
+        <div class="custom"><h4>Custom preference</h4><div class="custom-form"><input id="pref-name" aria-label="Preference name" placeholder="Name"><input id="pref-value" aria-label="Preference value" placeholder="Value"><button id="add-pref">Set preference</button></div><div id="custom-list" class="chips"></div></div>
+      </section>
+      <details class="inspector-section" open><summary><span>Canonical MathML</span><span class="section-index">02</span></summary><pre id="canonical" class="code-block"></pre></details>
+      <details class="inspector-section"><summary><span>Intent tree</span><span class="section-index">03</span></summary><pre id="intent" class="code-block"></pre></details>
+      <details class="inspector-section" open><summary><span>Diagnostics</span><span class="section-index">04</span></summary><div id="errors"></div><h4>Timings</h4><div id="timings" class="metadata"></div><h4>Effective preferences</h4><pre id="active-prefs" class="code-block"></pre></details>
+      <details class="inspector-section" open><summary><span>Engine messages</span><span class="section-index">05</span></summary><pre id="logs" class="code-block"></pre></details>
+    </aside>
+  </main>
+</body>
+</html>

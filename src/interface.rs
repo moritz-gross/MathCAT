@@ -261,6 +261,22 @@ pub fn get_spoken_text() -> Result<String> {
     return report_any_panic(result);
 }
 
+/// Return the intent tree for the MathML currently set by [`set_mathml`].
+/// This is useful when inspecting how speech rules interpret an expression.
+pub fn get_intent_mathml() -> Result<String> {
+    enable_logs();
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        MATHML_INSTANCE.with(|package_instance| {
+            let package_instance = package_instance.borrow();
+            let mathml = get_element(&package_instance);
+            let intent_package = Package::new();
+            let intent = crate::speech::intent_from_mathml(mathml, intent_package.as_document())?;
+            Ok(mml_to_string(intent))
+        })
+    }));
+    report_any_panic(result)
+}
+
 /// Get the spoken text for an overview of the MathML that was set.
 /// The speech takes into account any AT or user preferences.
 /// Note: this implementation for is currently minimal and should not be used.
@@ -299,6 +315,25 @@ pub fn get_preference(name: impl AsRef<str>) -> Result<String> {
         })
     }));
     return report_any_panic(result);
+}
+
+/// Return all effective preference names and values, sorted by name.
+/// This includes defaults, user preferences, and API overrides.
+pub fn get_all_preferences() -> Result<Vec<(String, String)>> {
+    enable_logs();
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let pref_manager = crate::prefs::PreferenceManager::get();
+        let pref_manager = pref_manager.borrow();
+        let mut preferences = pref_manager.merge_prefs().into_keys()
+            .map(|name| {
+                let value = pref_manager.pref_to_string(&name);
+                (name, value)
+            })
+            .collect::<Vec<_>>();
+        preferences.sort_by(|left, right| left.0.cmp(&right.0));
+        Ok(preferences)
+    }));
+    report_any_panic(result)
 }
 
 /// Set a MathCAT preference. The preference name should be a known preference name.

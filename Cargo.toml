@@ -38,6 +38,7 @@ cfg-if = "1.0.1"
 fastrand = { version = "2.3.0" }
 clap = { version = "4.5.60", features = ["derive"] }
 html-escape = "0.2.13"
+serde_json = "1.0"
 elements_rs = { version = "0.2.8", default-features = false }
 
 # Runtime extracts inner language/braille zips (BZIP2). The package-rules binary also
@@ -63,6 +64,10 @@ crate-type = ["rlib", "cdylib"]
 [[bin]]
 name = "mathml2text"
 path = "src/bin/mathml2text.rs"
+
+[[bin]]
+name = "mathcat-dev"
+path = "src/bin/mathcat_dev.rs"
 
 [[bin]]
 name = "package-rules"
