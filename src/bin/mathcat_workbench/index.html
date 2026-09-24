@@ -13,7 +13,9 @@
     <div class="header-meta"><span id="version"></span><span class="session-indicator">Local only</span><button id="open-settings" class="icon-button" type="button" aria-label="Open preferences" title="Preferences"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M10 2h4l.5 2.3 1.7.7 2-1.3 2.1 2.1-1.3 2 .7 1.7L22 10v4l-2.3.5-.7 1.7 1.3 2-2.1 2.1-2-1.3-1.7.7L14 22h-4l-.5-2.3-1.7-.7-2 1.3-2.1-2.1 1.3-2-.7-1.7L2 14v-4l2.3-.5.7-1.7-1.3-2 2.1-2.1 2 1.3 1.7-.7L10 2Zm2 6.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z"/></svg></button></div>
   </header>
 
-  <main class="workspace">
+  <nav class="view-switch" aria-label="Workbench views"><button id="show-workbench" class="view-tab" type="button" aria-pressed="true">Workbench</button><button id="show-tree" class="view-tab" type="button" aria-pressed="false">Expression tree</button></nav>
+
+  <main class="workspace" id="workbench-view">
     <div class="work-area">
       <section class="work-section input-section">
         <div class="section-heading"><div><span class="eyebrow">01 / Source</span><h2>MathML input</h2></div><div class="actions"><button id="run" class="primary">Run expression <span aria-hidden="true">↵</span></button></div></div>
@@ -56,6 +58,29 @@
       <details class="inspector-section" open><summary><span>Diagnostics</span><span class="section-index">03</span></summary><div id="errors"></div><h4>Timings</h4><div id="timings" class="metadata"></div></details>
       <details class="inspector-section" open><summary><span>Engine messages</span><span class="section-index">04</span></summary><pre id="logs" class="code-block"></pre></details>
     </aside>
+  </main>
+  <main class="tree-workspace" id="tree-view" hidden>
+    <section class="tree-pane" aria-label="Canonical expression tree">
+      <div class="tree-pane-heading"><div><span class="eyebrow">Structure</span><h2>Canonical tree</h2></div><span id="tree-status" class="status">Run an expression</span></div>
+      <p class="tree-hint">Select a node to inspect its MathML and in-context output. Expand branches to reveal children.</p>
+      <div id="tree-root" class="tree-root"></div>
+    </section>
+    <section class="tree-detail" aria-label="Selected node details">
+      <div class="tree-detail-heading"><div><span class="eyebrow">Selected node</span><h2 id="tree-node-title">No expression</h2></div><span id="tree-node-id" class="metadata"></span></div>
+      <div id="tree-error" class="tree-error" role="alert" hidden></div>
+      <div class="tree-rendered"><span class="eyebrow">Rendered selection</span><iframe id="tree-node-preview" title="Selected MathML rendering" sandbox=""></iframe></div>
+      <div class="tree-comparison">
+        <section class="tree-card"><div class="tree-card-heading"><h3>Source MathML</h3><span id="tree-source-status" class="format-tag"></span></div><pre id="tree-source" class="code-block"></pre></section>
+        <section class="tree-card"><div class="tree-card-heading"><h3>Canonical MathML</h3><span id="tree-canonical-status" class="format-tag"></span></div><pre id="tree-canonical" class="code-block"></pre></section>
+        <section class="tree-card"><div class="tree-card-heading"><h3>Intent</h3><span id="tree-intent-status" class="format-tag"></span></div><pre id="tree-intent" class="code-block"></pre></section>
+      </div>
+      <div class="tree-output-grid">
+        <section class="tree-output"><div class="tree-card-heading"><h3>In-context speech</h3></div><pre id="tree-speech" class="result-text compact"></pre></section>
+        <section class="tree-output"><div class="tree-card-heading"><h3>SSML</h3></div><pre id="tree-ssml" class="code-block"></pre></section>
+      </div>
+      <section class="tree-output tree-braille-output"><div class="tree-card-heading"><h3>Braille</h3><span id="tree-braille-range" class="format-tag"></span></div><pre id="tree-braille" class="result-text braille"></pre></section>
+      <details class="tree-diagnostics"><summary>Node diagnostics and engine messages</summary><div id="tree-node-errors"></div><p id="tree-node-timings" class="metadata"></p><pre id="tree-node-logs" class="code-block"></pre></details>
+    </section>
   </main>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="dialog-heading"><div><span class="eyebrow">MathCAT</span><h2 id="settings-title">Preferences</h2></div><button id="close-settings" class="quiet" type="button" aria-label="Close preferences">Close <span aria-hidden="true">×</span></button></div>

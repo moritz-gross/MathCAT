@@ -187,20 +187,56 @@ impl Workbench {
             errors.insert("navigation".into(), json!("Unsupported navigation command"));
         } else {
             add_result("navigationSpeech", do_navigate_command(command), &mut outputs, &mut errors);
-            if let Ok((id, offset)) = get_navigation_mathml_id() {
-                outputs.insert("nodeId".into(), json!(id));
-                outputs.insert("offset".into(), json!(offset));
-                add_result("focusedMathml", get_navigation_mathml().map(|v| v.0), &mut outputs, &mut errors);
-                add_result("highlightedBraille", get_braille(&id), &mut outputs, &mut errors);
-                match get_braille_position() {
-                    Ok((start, end)) => { outputs.insert("brailleRange".into(), json!([start, end])); },
-                    Err(error) => { errors.insert("brailleRange".into(), json!(errors_to_string(&error))); },
-                }
-            }
+            self.focused_outputs(&mut outputs, &mut errors);
         }
         finish_event(json!({"kind":"navigate", "command":command, "input":input,
             "settings":settings, "outputs":outputs, "errors":errors,
             "timings_ms":{"navigation":milliseconds(start)}, "preferences":self.preferences()}))
+    }
+    fn node(&mut self, id: &str) -> Value {
+        take_logs();
+        let (input, settings) = match &self.current {
+            Some((input, settings)) => (input.clone(), settings.clone()),
+            None => return finish_event(json!({"kind":"node", "errors":{"node":"Submit valid MathML first"}})),
+        };
+        let mut outputs = Map::new();
+        let mut errors = Map::new();
+        let start = Instant::now();
+        match set_navigation_node(id, 0) {
+            Ok(()) => self.focused_outputs(&mut outputs, &mut errors),
+            Err(error) => { errors.insert("node".into(), json!(errors_to_string(&error))); },
+        }
+        finish_event(json!({"kind":"node", "input":input, "settings":settings,
+            "outputs":outputs, "errors":errors, "timings_ms":{"node":milliseconds(start)},
+            "preferences":self.preferences()}))
+    }
+    fn focused_outputs(&self, outputs: &mut Map<String, Value>, errors: &mut Map<String, Value>) {
+        match get_navigation_mathml_id() {
+            Ok((id, offset)) => {
+                outputs.insert("nodeId".into(), json!(id));
+                outputs.insert("offset".into(), json!(offset));
+                add_result("focusedMathml", get_navigation_mathml().map(|v| v.0), outputs, errors);
+                add_result("highlightedBraille", get_braille(&id), outputs, errors);
+                match get_braille_position() {
+                    Ok((start, end)) => { outputs.insert("brailleRange".into(), json!([start, end])); },
+                    Err(error) => { errors.insert("brailleRange".into(), json!(errors_to_string(&error))); },
+                }
+                self.read_current_formats(outputs, errors);
+            }
+            Err(error) => { errors.insert("node".into(), json!(errors_to_string(&error))); },
+        }
+    }
+    fn read_current_formats(&self, outputs: &mut Map<String, Value>, errors: &mut Map<String, Value>) {
+        let original_tts = get_preference("TTS").unwrap_or_else(|_| "None".into());
+        for (tts, key) in [("None", "nodeSpeech"), ("SSML", "nodeSsml")] {
+            match set_preference("TTS", tts) {
+                Ok(()) => add_result(key, do_navigate_command("ReadCurrent"), outputs, errors),
+                Err(error) => { errors.insert(key.into(), json!(errors_to_string(&error))); },
+            }
+        }
+        if let Err(error) = set_preference("TTS", &original_tts) {
+            errors.insert("tts_restore".into(), json!(errors_to_string(&error)));
+        }
     }
     fn reload(&mut self) -> Value {
         match self.current.clone() {
@@ -287,6 +323,7 @@ fn handle(stream: &mut TcpStream, app: &mut Workbench) -> std::io::Result<()> {
                             }
                         }
                         "/api/navigate" => app.navigate(payload.get("command").and_then(Value::as_str).unwrap_or("")),
+                        "/api/node" => app.node(payload.get("id").and_then(Value::as_str).unwrap_or("")),
                         "/api/reload" => app.reload(),
                         _ => json!({"error":"Unknown API route"}),
                     };
@@ -350,8 +387,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod tests {
     use super::*;
 
-    /// A run exposes all developer outputs; a malformed replacement clears the active expression
-    /// so the page never shows stale output or restores it after refresh.
+    /// Evaluation exposes developer outputs, node selection reads in context without changing TTS,
+    /// and malformed replacement input clears the active expression.
     #[test]
     fn workbench_keeps_results_and_errors_separate() {
         set_rules_dir(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Rules").to_string_lossy()).unwrap();
@@ -370,6 +407,20 @@ mod tests {
         assert!(valid["errors"].as_object().unwrap().is_empty());
         let navigation = app.navigate("ZoomIn");
         assert!(navigation["outputs"]["nodeId"].is_string());
+        assert!(navigation["outputs"]["nodeSpeech"].is_string());
+        assert!(navigation["outputs"]["nodeSsml"].is_string());
+        let node_id = navigation["outputs"]["nodeId"].as_str().unwrap();
+        assert_eq!(get_navigation_mathml_id().unwrap().0, node_id);
+        let original_tts = get_preference("TTS").unwrap();
+        let selected = app.node(node_id);
+        assert_eq!(selected["outputs"]["nodeId"], node_id);
+        assert_eq!(get_navigation_mathml_id().unwrap().0, node_id);
+        assert!(selected["outputs"]["nodeSpeech"].is_string());
+        assert!(selected["outputs"]["nodeSsml"].is_string());
+        assert!(selected["outputs"]["highlightedBraille"].is_string());
+        assert_eq!(selected["outputs"]["brailleRange"].as_array().unwrap().len(), 2);
+        assert_eq!(get_preference("TTS").unwrap(), original_tts);
+        assert!(app.node("missing-node")["errors"]["node"].is_string());
         let original_rule_check = get_preference("CheckRuleFiles").unwrap();
         let reloaded = app.reload();
         assert!(reloaded["outputs"]["canonical"].is_string());
