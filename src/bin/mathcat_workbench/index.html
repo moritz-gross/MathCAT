@@ -10,7 +10,7 @@
 <body>
   <header class="app-header">
     <div class="brand"><span class="brand-name">MathCAT</span><span class="brand-divider">/</span><span>Workbench</span></div>
-    <div class="header-meta"><span id="version"></span><span class="session-indicator">Local only</span></div>
+    <div class="header-meta"><span id="version"></span><span class="session-indicator">Local only</span><button id="open-settings" class="icon-button" type="button" aria-label="Open preferences" title="Preferences"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M10 2h4l.5 2.3 1.7.7 2-1.3 2.1 2.1-1.3 2 .7 1.7L22 10v4l-2.3.5-.7 1.7 1.3 2-2.1 2.1-2-1.3-1.7.7L14 22h-4l-.5-2.3-1.7-.7-2 1.3-2.1-2.1 1.3-2-.7-1.7L2 14v-4l2.3-.5.7-1.7-1.3-2 2.1-2.1 2 1.3 1.7-.7L10 2Zm2 6.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z"/></svg></button></div>
   </header>
 
   <main class="workspace">
@@ -51,21 +51,24 @@
 
     <aside class="inspector" aria-label="MathCAT inspector">
       <div class="pane-heading"><div><span class="eyebrow">Engine</span><h2>Inspector</h2></div><button id="reload" class="quiet">Reload rules</button></div>
-      <section class="inspector-section preferences-section"><div class="inspector-heading"><h3>Preferences</h3><span class="section-index">01</span></div>
-        <div class="settings-grid">
-          <label>Language<select id="language"></select></label>
-          <label>Speech style<select id="speechStyle"></select></label>
-          <label>Speech verbosity<select id="verbosity"><option>Terse</option><option>Medium</option><option>Verbose</option></select></label>
-          <label>Braille code<select id="brailleCode"></select></label>
-          <label>Navigation mode<select id="navMode"><option>Enhanced</option><option>Simple</option><option>Character</option></select></label>
-        </div>
-        <div class="custom"><h4>Custom preference</h4><div class="custom-form"><input id="pref-name" aria-label="Preference name" placeholder="Name"><input id="pref-value" aria-label="Preference value" placeholder="Value"><button id="add-pref">Set preference</button></div><div id="custom-list" class="chips"></div></div>
-      </section>
-      <details class="inspector-section" open><summary><span>Canonical MathML</span><span class="section-index">02</span></summary><pre id="canonical" class="code-block"></pre></details>
-      <details class="inspector-section"><summary><span>Intent tree</span><span class="section-index">03</span></summary><pre id="intent" class="code-block"></pre></details>
-      <details class="inspector-section" open><summary><span>Diagnostics</span><span class="section-index">04</span></summary><div id="errors"></div><h4>Timings</h4><div id="timings" class="metadata"></div><h4>Effective preferences</h4><pre id="active-prefs" class="code-block"></pre></details>
-      <details class="inspector-section" open><summary><span>Engine messages</span><span class="section-index">05</span></summary><pre id="logs" class="code-block"></pre></details>
+      <details class="inspector-section" open><summary><span>Canonical MathML</span><span class="section-index">01</span></summary><pre id="canonical" class="code-block"></pre></details>
+      <details class="inspector-section" open><summary><span>Intent tree</span><span class="section-index">02</span></summary><pre id="intent" class="code-block"></pre></details>
+      <details class="inspector-section" open><summary><span>Diagnostics</span><span class="section-index">03</span></summary><div id="errors"></div><h4>Timings</h4><div id="timings" class="metadata"></div></details>
+      <details class="inspector-section" open><summary><span>Engine messages</span><span class="section-index">04</span></summary><pre id="logs" class="code-block"></pre></details>
     </aside>
   </main>
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-heading"><div><span class="eyebrow">MathCAT</span><h2 id="settings-title">Preferences</h2></div><button id="close-settings" class="quiet" type="button" aria-label="Close preferences">Close <span aria-hidden="true">×</span></button></div>
+    <div class="settings-grid">
+      <label>Language<select id="language"></select></label>
+      <label>Speech style<select id="speechStyle"></select></label>
+      <label>Speech verbosity<select id="verbosity"><option>Terse</option><option>Medium</option><option>Verbose</option></select></label>
+      <label>Braille code<select id="brailleCode"></select></label>
+      <label>Navigation mode<select id="navMode"><option>Enhanced</option><option>Simple</option><option>Character</option></select></label>
+    </div>
+    <div class="custom"><h4>Custom preference</h4><div class="custom-form"><input id="pref-name" aria-label="Preference name" placeholder="Name"><input id="pref-value" aria-label="Preference value" placeholder="Value"><button id="add-pref">Set preference</button></div><div id="custom-list" class="chips"></div></div>
+    <details class="effective-settings"><summary>Effective preferences from last run</summary><pre id="active-prefs" class="code-block"></pre></details>
+    <p class="dialog-note">Changes take effect when you run the expression again.</p>
+  </dialog>
 </body>
 </html>

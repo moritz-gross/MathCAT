@@ -140,6 +140,9 @@ async function init() {
       $(id).addEventListener('change', markDirty);
     }
     $('language').addEventListener('change', updateStyles);
+    $('open-settings').onclick = () => $('settings-dialog').showModal();
+    $('close-settings').onclick = () => $('settings-dialog').close();
+    $('settings-dialog').onclick = event => { if (event.target === $('settings-dialog')) $('settings-dialog').close(); };
     $('run').onclick = () => run($('input').value, settings());
     $('reload').onclick = () => action('/api/reload', {});
     document.querySelectorAll('[data-command]').forEach(button => button.onclick = () => action('/api/navigate', {command:button.dataset.command}));

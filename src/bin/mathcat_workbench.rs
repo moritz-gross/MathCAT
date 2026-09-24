@@ -1,4 +1,4 @@
-//! Local MathCAT workbench. All MathCAT calls stay on the server thread.
+//! Local MathCAT Workbench. All MathCAT calls stay on the server thread.
 use clap::Parser;
 use libmathcat::interface::*;
 use log::{LevelFilter, Log, Metadata, Record};
@@ -7,16 +7,17 @@ use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::Instant;
 
-const HTML: &str = include_str!("mathcat_dev/index.html");
-const JS: &str = include_str!("mathcat_dev/app.js");
-const CSS: &str = include_str!("mathcat_dev/style.css");
+const HTML: &str = include_str!("mathcat_workbench/index.html");
+const JS: &str = include_str!("mathcat_workbench/app.js");
+const CSS: &str = include_str!("mathcat_workbench/style.css");
 const MAX_BODY: usize = 1024 * 1024 + 64 * 1024;
 
 #[derive(Parser)]
-#[command(about = "Local MathCAT developer workbench", version)]
+#[command(about = "Local MathCAT Workbench", version)]
 struct Options {
     /// MathCAT Rules directory. Defaults to the checkout's Rules directory.
     #[arg(long)]
@@ -58,7 +59,7 @@ impl Workbench {
     }
     fn bootstrap(&self) -> Value {
         let defaults = json!({
-            "language": get_preference("Language").unwrap_or_else(|_| "en".into()),
+            "language": "en",
             "speechStyle": get_preference("SpeechStyle").unwrap_or_else(|_| "ClearSpeak".into()),
             "verbosity": get_preference("Verbosity").unwrap_or_else(|_| "Medium".into()),
             "brailleCode": get_preference("BrailleCode").unwrap_or_else(|_| "Nemeth".into()),
@@ -299,14 +300,42 @@ fn handle(stream: &mut TcpStream, app: &mut Workbench) -> std::io::Result<()> {
     };
     reply(stream, status, content_type, &body)
 }
+fn open_browser(url: &str) -> std::io::Result<()> {
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = Command::new("cmd");
+        command.args(["/C", "start", "", url]);
+        command
+    };
+    #[cfg(target_os = "macos")]
+    let mut command = {
+        let mut command = Command::new("open");
+        command.arg(url);
+        command
+    };
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    let mut command = {
+        let mut command = Command::new("xdg-open");
+        command.arg(url);
+        command
+    };
+    command.stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::set_logger(&APP_LOGGER)?;
     log::set_max_level(LevelFilter::Debug);
     let options = Options::parse();
     let rules_dir = options.rules_dir.unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Rules"));
     set_rules_dir(rules_dir.to_string_lossy())?;
+    set_preference("Language", "en")?;
     let listener = TcpListener::bind(("127.0.0.1", options.port))?;
-    println!("MathCAT developer workbench: http://{}/", listener.local_addr()?);
+    let url = format!("http://{}/", listener.local_addr()?);
+    println!("MathCAT Workbench: {url}");
+    if let Err(error) = open_browser(&url) {
+        eprintln!("Could not open the browser: {error}. Open {url} manually.");
+    }
     let mut app = Workbench::new();
     for connection in listener.incoming() {
         match connection {
@@ -327,7 +356,10 @@ mod tests {
     fn workbench_keeps_results_and_errors_separate() {
         set_rules_dir(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Rules").to_string_lossy()).unwrap();
         let mut app = Workbench::new();
-        let settings = app.bootstrap()["defaults"].clone();
+        let bootstrap = app.bootstrap();
+        assert_eq!(bootstrap["defaults"]["language"], "en");
+        assert!(!bootstrap["languages"].as_array().unwrap().iter().any(|language| language == "Auto"));
+        let settings = bootstrap["defaults"].clone();
         let valid = app.evaluate("<math><mfrac><mi>a</mi><mi>b</mi></mfrac></math>".into(), settings.clone(), false);
         assert!(valid["outputs"]["canonical"].as_str().unwrap().contains("mfrac"));
         assert!(valid["outputs"]["intent"].as_str().unwrap().contains("math"));

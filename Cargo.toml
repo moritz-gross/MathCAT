@@ -66,8 +66,8 @@ name = "mathml2text"
 path = "src/bin/mathml2text.rs"
 
 [[bin]]
-name = "mathcat-dev"
-path = "src/bin/mathcat_dev.rs"
+name = "mathcat-workbench"
+path = "src/bin/mathcat_workbench.rs"
 
 [[bin]]
 name = "package-rules"

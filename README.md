@@ -18,8 +18,8 @@ MathCAT is used in many assistive technologies including NVDA and JAWS.
 
 For more information, see the [full documentation](https://daisy.github.io/MathCAT/).
 
-## Local developer workbench
+## MathCAT Workbench
 
-From the repository root, run `cargo run --bin mathcat-dev` and open the local URL printed by the program. The workbench displays MathML, speech, SSML, braille, the intent tree, and engine messages. It also offers basic navigation and a Reload Rules button for local YAML edits.
+From the repository root, run `cargo run --bin mathcat-workbench`. The browser opens automatically, and the program prints the local URL as a fallback. The workbench displays MathML, speech, SSML, braille, the intent tree, and engine messages. It also offers basic navigation and a Reload Rules button for local YAML edits.
 
-Use `cargo run --bin mathcat-dev -- --rules-dir /path/to/Rules --port 8080` to choose a different rules directory or port. The default port is selected automatically.
+Use `cargo run --bin mathcat-workbench -- --rules-dir /path/to/Rules --port 8080` to choose a different rules directory or port. The default port is selected automatically.
