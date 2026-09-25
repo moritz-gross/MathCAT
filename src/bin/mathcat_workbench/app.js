@@ -431,8 +431,15 @@ function treeKeydown(event) {
   if (state.view !== 'tree' || $('settings-dialog').open || !state.activeEvaluation || state.dirty) return;
   if (event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
   if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
-  const command = {ArrowLeft:'MovePrevious', ArrowRight:'MoveNext', ArrowUp:'ZoomOut', ArrowDown:'ZoomIn'}[event.key];
+  const command = {
+    ArrowLeft:'MovePrevious', ArrowRight:'MoveNext', ArrowUp:'ZoomOut', ArrowDown:'ZoomIn',
+    ' ':'ReadCurrent', Spacebar:'ReadCurrent', Enter:'WhereAmI'
+  }[event.key];
   if (!command) return;
+  if (command === 'ReadCurrent' || command === 'WhereAmI') {
+    const control = event.target?.closest?.('button, a, summary, [role="button"]');
+    if (control && (!control.classList.contains('tree-select') || control.dataset.nodeId !== state.tree?.selectedId)) return;
+  }
   event.preventDefault();
   if (!state.busy) action('/api/navigate', {command});
 }
