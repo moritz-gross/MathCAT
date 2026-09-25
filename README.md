@@ -20,6 +20,6 @@ For more information, see the [full documentation](https://daisy.github.io/MathC
 
 ## MathCAT Workbench
 
-From the repository root, run `cargo run --bin mathcat-workbench`. The browser opens automatically, and the program prints the local URL as a fallback. The workbench displays MathML, speech, SSML, braille, the intent tree, and engine messages. Its Expression tree view connects selected canonical nodes to source and intent MathML, in-context speech, and braille. It also offers basic navigation and a Reload Rules button for local YAML edits.
+From the repository root, run `cargo run --bin mathcat-workbench`. The browser opens automatically, and the program prints the local URL as a fallback. The workbench displays MathML, speech, SSML, braille, the intent tree, and engine messages. Its Expression tree view connects selected canonical nodes to source and intent MathML, in-context speech, and braille. MathCAT navigation in the tree follows the engine’s focused node; Shift+arrow keys navigate while unmodified arrows browse the visible tree. The browser reads navigation and selected-node speech aloud, with Play and Stop controls for replay. Browser voices may render MathCAT speech differently from its SSML. The workbench also offers a Reload Rules button for local YAML edits.
 
 Use `cargo run --bin mathcat-workbench -- --rules-dir /path/to/Rules --port 8080` to choose a different rules directory or port. The default port is selected automatically.

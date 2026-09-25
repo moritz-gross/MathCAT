@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const state = { activeEvaluation: null, nodeEvent: null, tree: null, view: 'workbench', custom: {}, busy: false, dirty: false };
+const state = { activeEvaluation: null, nodeEvent: null, tree: null, view: 'workbench', custom: {}, busy: false, dirty: false, utterance: null, audioToken: 0 };
 const sample = '<math xmlns="http://www.w3.org/1998/Math/MathML">\n  <mi>x</mi><mo>=</mo><mfrac><mrow><mo>−</mo><mi>b</mi><mo>±</mo><msqrt><msup><mi>b</mi><mn>2</mn></msup><mo>−</mo><mn>4</mn><mi>a</mi><mi>c</mi></msqrt></mrow><mrow><mn>2</mn><mi>a</mi></mrow></mfrac>\n</math>';
 async function api(path, body) {
   const response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', headers: body === undefined ? {} : {'Content-Type':'application/json'}, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -47,13 +47,53 @@ function renderCustom() {
   }
 }
 function markDirty() {
+  stopSpeech();
   state.dirty = true;
   document.querySelectorAll('[data-command]').forEach(button => button.disabled = true);
   $('reload').disabled = true;
   setText('nav-status', 'Run to apply changes');
   updateTreeControls();
+  updatePlaybackControls();
 }
 function setText(id, value) { $(id).textContent = value === undefined || value === null ? '' : String(value); }
+function audioAvailable() { return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window; }
+function updatePlaybackControls() {
+  document.querySelectorAll('[data-play]').forEach(button => {
+    button.disabled = !audioAvailable() || state.busy || state.dirty || !$(button.dataset.play).textContent.trim();
+  });
+  $('stop-audio').disabled = !state.utterance;
+}
+function stopSpeech() {
+  state.audioToken++;
+  if (audioAvailable()) window.speechSynthesis.cancel();
+  state.utterance = null;
+  setText('audio-status', '');
+  updatePlaybackControls();
+}
+function playSpeech(id) {
+  if (!audioAvailable()) { setText('audio-status', 'Browser speech is unavailable'); return; }
+  const value = $(id).textContent.trim();
+  if (!value) return;
+  stopSpeech();
+  const token = state.audioToken;
+  const utterance = new SpeechSynthesisUtterance(value);
+  utterance.lang = state.activeEvaluation?.settings?.language || $('language').value || 'en';
+  utterance.onstart = () => { if (state.audioToken === token) setText('audio-status', 'Speaking'); };
+  utterance.onend = () => {
+    if (state.audioToken !== token) return;
+    state.utterance = null; setText('audio-status', ''); updatePlaybackControls();
+  };
+  utterance.onerror = event => {
+    if (state.audioToken !== token) return;
+    state.utterance = null;
+    setText('audio-status', event.error === 'canceled' || event.error === 'interrupted' ? '' : `Speech error: ${event.error}`);
+    updatePlaybackControls();
+  };
+  state.utterance = utterance;
+  setText('audio-status', 'Starting speech');
+  updatePlaybackControls();
+  window.speechSynthesis.speak(utterance);
+}
 function preview(canonical) {
   const frame = $('preview');
   frame.srcdoc = canonical ? `<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><style>html,body{min-height:100%;margin:0}body{display:grid;place-items:center;padding:1rem;color:#1d2b31;background:#fff;font-size:1.7rem}math{max-width:100%;overflow:auto}</style>${canonical}` : '';
@@ -84,6 +124,7 @@ function display(event) {
   document.querySelectorAll('[data-command]').forEach(button => button.disabled = state.busy || !navigable);
   $('reload').disabled = state.busy || !navigable;
   setText('nav-status', navigable ? 'Ready' : 'Submit an expression');
+  updatePlaybackControls();
 }
 function busy(value) {
   state.busy = value;
@@ -91,6 +132,7 @@ function busy(value) {
   document.querySelectorAll('[data-command]').forEach(button => button.disabled = value || state.dirty || !state.activeEvaluation);
   $('reload').disabled = value || state.dirty || !state.activeEvaluation;
   updateTreeControls();
+  updatePlaybackControls();
 }
 function receive(event) {
   const resultEvent = !['navigate','node'].includes(event.kind);
@@ -98,9 +140,13 @@ function receive(event) {
   else state.nodeEvent = event;
   display(event);
   if (resultEvent) buildTree(event); else syncTreeFocus(event);
+  if (!resultEvent && !Object.keys(event.errors || {}).includes('navigation') && !Object.keys(event.errors || {}).includes('node')) {
+    playSpeech(event.kind === 'navigate' && event.outputs?.navigationSpeech ? 'nav-speech' : 'tree-speech');
+  }
 }
 async function run(input, chosenSettings) {
   if (state.busy) return;
+  stopSpeech();
   busy(true);
   try { receive(await api('/api/evaluate', {input, settings: chosenSettings})); }
   catch (error) { showTransportError(error); }
@@ -112,6 +158,7 @@ function showTransportError(error) {
 }
 async function action(path, body) {
   if (state.busy) return;
+  stopSpeech();
   busy(true);
   try { receive(await api(path, body)); }
   catch (error) { showTransportError(error); }
@@ -130,7 +177,9 @@ function setView(view) {
   $('tree-view').hidden = view !== 'tree';
   $('show-workbench').setAttribute('aria-pressed', view === 'workbench');
   $('show-tree').setAttribute('aria-pressed', view === 'tree');
-  if (view === 'tree' && state.tree?.selectedId) revealTreeRow(state.tree.selectedId);
+  if (view === 'tree' && state.tree?.selectedId) {
+    revealTreeRow(state.tree.selectedId)?.select.focus({preventScroll:true});
+  }
 }
 function parseXml(value) {
   const doc = new DOMParser().parseFromString(value, 'application/xml');
@@ -243,6 +292,7 @@ function renderTreeNode(node, parentId, depth) {
     const badge = document.createElement('span'); badge.className = 'tree-badge'; badge.textContent = label; select.append(badge);
   }
   if (id) {
+    select.dataset.nodeId = id;
     const entry = {node, id, parentId, depth, select, toggle, list: children, loaded: false};
     tree.rows.set(id, entry);
     if (node.children.length) toggle.onclick = () => toggle.getAttribute('aria-expanded') === 'true' ? collapseTreeRow(entry) : expandTreeRow(entry);
@@ -305,9 +355,11 @@ function buildTree(event) {
 }
 function clearTreeDetail() {
   setText('tree-node-title', 'No expression'); setText('tree-node-id', '');
-  for (const id of ['tree-source','tree-canonical','tree-intent','tree-speech','tree-ssml','tree-braille','tree-braille-range','tree-source-status','tree-canonical-status','tree-intent-status','tree-node-timings','tree-node-logs']) setText(id, '');
+  for (const id of ['tree-source','tree-canonical','tree-intent','tree-speech','tree-nav-speech','tree-ssml','tree-braille','tree-braille-range','tree-source-status','tree-canonical-status','tree-intent-status','tree-node-timings','tree-node-logs']) setText(id, '');
+  $('tree-navigation-response').hidden = true;
   $('tree-node-errors').replaceChildren();
   $('tree-node-preview').srcdoc = '';
+  updatePlaybackControls();
 }
 function renderTreeBraille(event) {
   const container = $('tree-braille'); container.replaceChildren();
@@ -342,6 +394,9 @@ function renderTreeDetail() {
   setText('tree-intent', intents.length ? intents.map(item => new XMLSerializer().serializeToString(item)).join('\n\n') : tree.intent ? 'No direct intent-node match' : 'Intent output unavailable');
   setText('tree-intent-status', intents.length ? `${intents.length} match${intents.length === 1 ? '' : 'es'}` : tree.intent ? 'Unmapped' : 'Unavailable');
   setText('tree-speech', event ? output.nodeSpeech : root ? output.speech : 'Select node to read');
+  const navigationSpeech = event?.kind === 'navigate' ? output.navigationSpeech || '' : '';
+  setText('tree-nav-speech', navigationSpeech);
+  $('tree-navigation-response').hidden = !navigationSpeech;
   setText('tree-ssml', event ? output.nodeSsml : root ? output.ssml : '');
   renderTreeBraille(event);
   const errors = $('tree-node-errors'); errors.replaceChildren();
@@ -350,11 +405,16 @@ function renderTreeDetail() {
   }
   setText('tree-node-timings', Object.entries(event?.timings_ms || {}).map(([key,value]) => `${key}: ${value} ms`).join('  ·  '));
   setText('tree-node-logs', (event?.logs || []).join('\n'));
+  updatePlaybackControls();
 }
 function syncTreeFocus(event) {
   const id = event.outputs?.nodeId;
-  if (id && state.tree?.byId.has(id)) markSelectedTreeNode(id);
-  if (!id && Object.keys(event.errors || {}).length) showTreeError(Object.values(event.errors).join('\n'));
+  if (id && state.tree?.byId.has(id)) {
+    markSelectedTreeNode(id);
+    if (event.kind === 'navigate' && state.view === 'tree') state.tree.rows.get(id)?.select.focus({preventScroll:true});
+  }
+  if ((!id || !state.tree?.byId.has(id)) && Object.keys(event.errors || {}).length) showTreeError(Object.values(event.errors).join('\n'));
+  else if (id && !state.tree?.byId.has(id)) showTreeError(`MathCAT focused node ${id}, which is absent from the canonical tree`);
   else showTreeError('');
   renderTreeDetail();
   updateTreeControls();
@@ -368,18 +428,31 @@ function selectTreeNode(id) {
   action('/api/node', {id});
 }
 function treeKeydown(event) {
+  if (state.view !== 'tree' || $('settings-dialog').open || !state.activeEvaluation || state.busy || state.dirty) return;
+  if (event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  if (event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+    const command = {ArrowLeft:'MovePrevious', ArrowRight:'MoveNext', ArrowUp:'ZoomOut', ArrowDown:'ZoomIn'}[event.key];
+    if (command) {
+      event.preventDefault();
+      action('/api/navigate', {command});
+      return;
+    }
+  }
+  if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
   if (!['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-  const current = document.activeElement.closest('.tree-row');
-  if (!current || !$('tree-root').contains(current)) return;
-  const visible = [...$('tree-root').querySelectorAll('.tree-select')].filter(button => button.getClientRects().length);
-  const button = current.querySelector('.tree-select'), index = visible.indexOf(button);
+  const treeRoot = $('tree-root');
+  const current = document.activeElement?.closest?.('.tree-row');
+  const focusedButton = current && treeRoot.contains(current) ? current.querySelector('.tree-select') : null;
+  const button = focusedButton || revealTreeRow(state.tree.selectedId)?.select;
+  const visible = [...treeRoot.querySelectorAll('.tree-select')].filter(item => item.getClientRects().length);
+  const index = visible.indexOf(button);
   if (index < 0) return;
-  let target;
+  let target = button;
   if (event.key === 'ArrowDown') target = visible[Math.min(index + 1, visible.length - 1)];
   if (event.key === 'ArrowUp') target = visible[Math.max(index - 1, 0)];
   if (event.key === 'Home') target = visible[0];
   if (event.key === 'End') target = visible[visible.length - 1];
-  const entry = [...state.tree.rows.values()].find(item => item.select === button);
+  const entry = state.tree.rows.get(button.dataset.nodeId);
   if (event.key === 'ArrowRight' && entry?.node.children.length) {
     if (entry.toggle.getAttribute('aria-expanded') === 'false') expandTreeRow(entry);
     else target = entry.list.querySelector('.tree-select');
@@ -390,6 +463,7 @@ function treeKeydown(event) {
   }
   event.preventDefault();
   target?.focus();
+  if (target?.dataset.nodeId && target.dataset.nodeId !== state.tree.selectedId) selectTreeNode(target.dataset.nodeId);
 }
 
 async function init() {
@@ -415,7 +489,9 @@ async function init() {
     $('language').addEventListener('change', updateStyles);
     $('show-workbench').onclick = () => setView('workbench');
     $('show-tree').onclick = () => setView('tree');
-    $('tree-root').addEventListener('keydown', treeKeydown);
+    document.addEventListener('keydown', treeKeydown, {capture:true});
+    document.querySelectorAll('[data-play]').forEach(button => button.onclick = () => playSpeech(button.dataset.play));
+    $('stop-audio').onclick = stopSpeech;
     $('open-settings').onclick = () => $('settings-dialog').showModal();
     $('close-settings').onclick = () => $('settings-dialog').close();
     $('settings-dialog').onclick = event => { if (event.target === $('settings-dialog')) $('settings-dialog').close(); };

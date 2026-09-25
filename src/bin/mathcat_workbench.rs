@@ -186,7 +186,14 @@ impl Workbench {
         if !allowed.contains(&command) {
             errors.insert("navigation".into(), json!("Unsupported navigation command"));
         } else {
-            add_result("navigationSpeech", do_navigate_command(command), &mut outputs, &mut errors);
+            let original_tts = get_preference("TTS").unwrap_or_else(|_| "None".into());
+            match set_preference("TTS", "None") {
+                Ok(()) => add_result("navigationSpeech", do_navigate_command(command), &mut outputs, &mut errors),
+                Err(error) => { errors.insert("navigationSpeech".into(), json!(errors_to_string(&error))); },
+            }
+            if let Err(error) = set_preference("TTS", &original_tts) {
+                errors.insert("tts_restore".into(), json!(errors_to_string(&error)));
+            }
             self.focused_outputs(&mut outputs, &mut errors);
         }
         finish_event(json!({"kind":"navigate", "command":command, "input":input,
@@ -405,7 +412,13 @@ mod tests {
         assert!(valid["outputs"]["braille"].is_string());
         assert_eq!(valid["preferences"]["SpeechStyle"], settings["speechStyle"]);
         assert!(valid["errors"].as_object().unwrap().is_empty());
+        let original_tts = get_preference("TTS").unwrap();
+        set_preference("TTS", "SSML").unwrap();
         let navigation = app.navigate("ZoomIn");
+        assert!(navigation["outputs"]["navigationSpeech"].is_string());
+        assert!(!navigation["outputs"]["navigationSpeech"].as_str().unwrap().contains("<speak"));
+        assert_eq!(get_preference("TTS").unwrap(), "SSML");
+        set_preference("TTS", &original_tts).unwrap();
         assert!(navigation["outputs"]["nodeId"].is_string());
         assert!(navigation["outputs"]["nodeSpeech"].is_string());
         assert!(navigation["outputs"]["nodeSsml"].is_string());
