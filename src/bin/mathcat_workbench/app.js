@@ -428,42 +428,13 @@ function selectTreeNode(id) {
   action('/api/node', {id});
 }
 function treeKeydown(event) {
-  if (state.view !== 'tree' || $('settings-dialog').open || !state.activeEvaluation || state.busy || state.dirty) return;
+  if (state.view !== 'tree' || $('settings-dialog').open || !state.activeEvaluation || state.dirty) return;
   if (event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
-  if (event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
-    const command = {ArrowLeft:'MovePrevious', ArrowRight:'MoveNext', ArrowUp:'ZoomOut', ArrowDown:'ZoomIn'}[event.key];
-    if (command) {
-      event.preventDefault();
-      action('/api/navigate', {command});
-      return;
-    }
-  }
   if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
-  if (!['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-  const treeRoot = $('tree-root');
-  const current = document.activeElement?.closest?.('.tree-row');
-  const focusedButton = current && treeRoot.contains(current) ? current.querySelector('.tree-select') : null;
-  const button = focusedButton || revealTreeRow(state.tree.selectedId)?.select;
-  const visible = [...treeRoot.querySelectorAll('.tree-select')].filter(item => item.getClientRects().length);
-  const index = visible.indexOf(button);
-  if (index < 0) return;
-  let target = button;
-  if (event.key === 'ArrowDown') target = visible[Math.min(index + 1, visible.length - 1)];
-  if (event.key === 'ArrowUp') target = visible[Math.max(index - 1, 0)];
-  if (event.key === 'Home') target = visible[0];
-  if (event.key === 'End') target = visible[visible.length - 1];
-  const entry = state.tree.rows.get(button.dataset.nodeId);
-  if (event.key === 'ArrowRight' && entry?.node.children.length) {
-    if (entry.toggle.getAttribute('aria-expanded') === 'false') expandTreeRow(entry);
-    else target = entry.list.querySelector('.tree-select');
-  }
-  if (event.key === 'ArrowLeft' && entry) {
-    if (entry.toggle.getAttribute('aria-expanded') === 'true') collapseTreeRow(entry);
-    else target = state.tree.rows.get(entry.parentId)?.select;
-  }
+  const command = {ArrowLeft:'MovePrevious', ArrowRight:'MoveNext', ArrowUp:'ZoomOut', ArrowDown:'ZoomIn'}[event.key];
+  if (!command) return;
   event.preventDefault();
-  target?.focus();
-  if (target?.dataset.nodeId && target.dataset.nodeId !== state.tree.selectedId) selectTreeNode(target.dataset.nodeId);
+  if (!state.busy) action('/api/navigate', {command});
 }
 
 async function init() {
