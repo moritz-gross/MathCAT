@@ -1298,7 +1298,8 @@ fn is_structural(elements: &[NameStr<'_>]) -> bool {
     assert!(elements.len() > 1);   // already handled
 
     // debug!("is_structural: {:?}", elements);
-    let element_set: HashSet<_> = elements.iter().map(|e| as_str!(*e)).collect();
+    let mut element_set = HashSet::with_capacity(elements.len());
+    elements.iter().for_each(|e| {element_set.insert(as_str!(*e));});
     return element_set.len() < elements.len();
 }
 
