@@ -1,5 +1,6 @@
 """Checks the rule coverage command without rerunning the Rust test suite."""
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -19,13 +20,16 @@ def test_coverage_command_generates_reports_and_opens_browser(tmp_path: Path, mo
     def fake_cargo(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         assert command == ["cargo", "test", "--features", "rule-coverage"]
         assert kwargs["cwd"] == tmp_path
-        (output / "events" / "pid-123.events").write_text(
-            "loaded\tLanguages/en/SimpleSpeak_Rules.yaml\n"
-            "loaded\tLanguages/en/definitions.yaml\n"
-            "matched\tLanguages/en/SimpleSpeak_Rules.yaml\n"
-            "defined-rule\tLanguages/en/SimpleSpeak_Rules.yaml\t73696d706c65\t6d69\n"
-            "defined-rule\tLanguages/en/SimpleSpeak_Rules.yaml\t64656661756c74\t6d69\n"
-            "matched-rule\tLanguages/en/SimpleSpeak_Rules.yaml\t73696d706c65\t6d69\n",
+        events = [
+            {"kind": "loaded", "path": "Languages/en/SimpleSpeak_Rules.yaml"},
+            {"kind": "loaded", "path": "Languages/en/definitions.yaml"},
+            {"kind": "matched", "path": "Languages/en/SimpleSpeak_Rules.yaml"},
+            {"kind": "defined-rule", "path": "Languages/en/SimpleSpeak_Rules.yaml", "name": "simple", "tag": "mi"},
+            {"kind": "defined-rule", "path": "Languages/en/SimpleSpeak_Rules.yaml", "name": "default", "tag": "mi"},
+            {"kind": "matched-rule", "path": "Languages/en/SimpleSpeak_Rules.yaml", "name": "simple", "tag": "mi"},
+        ]
+        (output / "events" / "pid-123.jsonl").write_text(
+            "\n".join(json.dumps(event) for event in events) + "\n",
             encoding="utf-8",
         )
         return subprocess.CompletedProcess(command, 0)
@@ -68,3 +72,22 @@ def test_failed_coverage_run_opens_incomplete_report(tmp_path: Path, monkeypatch
     assert opened == [(output / "index.html").as_uri()]
     assert "Status: **Incomplete**" in (output / "report.md").read_text(encoding="utf-8")
     assert "No loaded YAML events found" in (output / "index.html").read_text(encoding="utf-8")
+
+
+def test_jsonl_rule_identity_preserves_separators_and_unicode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """JSONL rule names survive tabs, newlines, and Unicode without splitting events."""
+    events = tmp_path / "events"
+    events.mkdir()
+    monkeypatch.setattr(rule_coverage, "EVENTS", events)
+    name = "fraction\tname\nüber"
+    path = "Languages/en/SimpleSpeak_Rules.yaml"
+    (events / "pid-123.jsonl").write_text(
+        json.dumps({"kind": "defined-rule", "path": path, "name": name, "tag": "mfrac"}) + "\n",
+        encoding="utf-8",
+    )
+
+    loaded, matched, defined, matched_rules, errors = rule_coverage.read_events()
+
+    assert loaded == matched == matched_rules == set()
+    assert defined == {(path, name, "mfrac")}
+    assert errors == []

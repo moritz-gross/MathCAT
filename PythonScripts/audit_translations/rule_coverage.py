@@ -1,5 +1,6 @@
 """Run the full Rust test suite and report which rule YAML files it exercises."""
 
+import json
 import shutil
 import subprocess
 import sys
@@ -19,28 +20,34 @@ def read_events() -> tuple[set[str], set[str], set[RuleKey], set[RuleKey], list[
     defined_rules: set[RuleKey] = set()
     matched_rules: set[RuleKey] = set()
     errors: list[str] = []
-    for event_file in sorted(EVENTS.glob("*.events")):
+    for event_file in sorted(EVENTS.glob("*.jsonl")):
         for number, line in enumerate(event_file.read_text(encoding="utf-8").splitlines(), 1):
-            fields = line.split("\t")
-            kind = fields[0]
-            path = fields[1] if len(fields) > 1 else ""
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                errors.append(f"Invalid JSON in {event_file.name}:{number}")
+                continue
+            if not isinstance(event, dict):
+                errors.append(f"Invalid event in {event_file.name}:{number}")
+                continue
+            kind = event.get("kind")
+            path = event.get("path")
+            if not isinstance(path, str):
+                errors.append(f"Invalid event in {event_file.name}:{number}")
+                continue
             path = path.replace("\\", "/")
             parts = PurePosixPath(path).parts
             if (not parts
                     or PurePosixPath(path).is_absolute() or ".." in parts
                     or PurePosixPath(path).suffix not in (".yaml", ".yml")):
                 errors.append(f"Invalid event in {event_file.name}:{number}")
-            elif kind == "loaded" and len(fields) == 2:
+            elif kind == "loaded" and event.keys() == {"kind", "path"}:
                 loaded.add(path)
-            elif kind == "matched" and len(fields) == 2:
+            elif kind == "matched" and event.keys() == {"kind", "path"}:
                 matched.add(path)
-            elif kind in ("defined-rule", "matched-rule") and len(fields) == 4:
-                try:
-                    name, tag = (bytes.fromhex(value).decode("utf-8") for value in fields[2:])
-                except (ValueError, UnicodeDecodeError):
-                    errors.append(f"Invalid rule identity in {event_file.name}:{number}")
-                    continue
-                if not name or not tag:
+            elif kind in ("defined-rule", "matched-rule") and event.keys() == {"kind", "path", "name", "tag"}:
+                name, tag = event["name"], event["tag"]
+                if not isinstance(name, str) or not isinstance(tag, str) or not name or not tag:
                     errors.append(f"Empty rule identity in {event_file.name}:{number}")
                 elif kind == "defined-rule":
                     defined_rules.add((path, name, tag))

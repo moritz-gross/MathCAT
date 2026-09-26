@@ -27,10 +27,6 @@ fn rule_relative_path(path: &Path) -> Option<PathBuf> {
     Some(relative.to_path_buf())
 }
 
-fn hex(value: &str) -> String {
-    value.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect()
-}
-
 fn record(kind: EventKind, path: &Path, name: &str, tag: &str) {
     let Some(relative) = rule_relative_path(path) else { return };
     let mut recorded = RECORDED.get_or_init(|| Mutex::new(HashSet::new()))
@@ -43,15 +39,17 @@ fn record(kind: EventKind, path: &Path, name: &str, tag: &str) {
     let event_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("target/rule-coverage/events");
     fs::create_dir_all(&event_dir).expect("cannot create rule coverage event directory");
-    let event_file = event_dir.join(format!("pid-{}.events", std::process::id()));
+    let event_file = event_dir.join(format!("pid-{}.jsonl", std::process::id()));
     let mut output = OpenOptions::new().create(true).append(true).open(event_file)
         .expect("cannot open rule coverage event file");
-    match kind {
-        EventKind::Loaded => writeln!(output, "loaded\t{}", relative.display()),
-        EventKind::Matched => writeln!(output, "matched\t{}", relative.display()),
-        EventKind::DefinedRule => writeln!(output, "defined-rule\t{}\t{}\t{}", relative.display(), hex(name), hex(tag)),
-        EventKind::MatchedRule => writeln!(output, "matched-rule\t{}\t{}\t{}", relative.display(), hex(name), hex(tag)),
-    }.expect("cannot write rule coverage event");
+    let path = relative.to_string_lossy();
+    let event = match kind {
+        EventKind::Loaded => serde_json::json!({"kind": "loaded", "path": path}),
+        EventKind::Matched => serde_json::json!({"kind": "matched", "path": path}),
+        EventKind::DefinedRule => serde_json::json!({"kind": "defined-rule", "path": path, "name": name, "tag": tag}),
+        EventKind::MatchedRule => serde_json::json!({"kind": "matched-rule", "path": path, "name": name, "tag": tag}),
+    };
+    writeln!(output, "{event}").expect("cannot write rule coverage event");
     recorded.insert(key);
 }
 
