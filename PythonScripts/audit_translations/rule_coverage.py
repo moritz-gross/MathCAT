@@ -12,7 +12,7 @@ from .rule_coverage_report import RuleKey, render_html, rule_section, section
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "target" / "rule-coverage"
 EVENTS = OUTPUT / "events"
-UNICODE_FILE_NAMES = {"unicode.yaml", "unicode-full.yaml"}
+EXCLUDED_FILE_NAMES = {"definitions.yaml", "unicode.yaml", "unicode-full.yaml"}
 
 
 def read_events() -> tuple[set[str], set[str], set[RuleKey], set[RuleKey], list[str]]:
@@ -42,7 +42,7 @@ def read_events() -> tuple[set[str], set[str], set[RuleKey], set[RuleKey], list[
                     or PurePosixPath(path).is_absolute() or ".." in parts
                     or PurePosixPath(path).suffix not in (".yaml", ".yml")):
                 errors.append(f"Invalid event in {event_file.name}:{number}")
-            elif PurePosixPath(path).name.lower() in UNICODE_FILE_NAMES:
+            elif PurePosixPath(path).name.lower() in EXCLUDED_FILE_NAMES:
                 continue
             elif kind == "loaded" and event.keys() == {"kind", "path"}:
                 loaded.add(path)
@@ -104,7 +104,7 @@ def run() -> int:
         "# Rule YAML coverage\n",
         f"Status: **{status}**\n",
         "Paths are relative to `Rules/`. A pattern file is matched when a rule from it completes its replacement successfully.\n",
-        "Unicode mapping files are omitted because this report measures pattern-rule coverage.\n",
+        "Unicode mapping and definition files are omitted because this report measures pattern-rule coverage.\n",
     ]
     if errors:
         report.append("## Problems\n\n" + "\n".join(f"- {error}" for error in errors) + "\n")

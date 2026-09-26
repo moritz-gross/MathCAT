@@ -32,7 +32,7 @@ summary { cursor: pointer; }
 <span>{{ matched_rule_count }} of {{ defined_rule_count }} active rules matched</span></div>
 <p>Paths are relative to <code>Rules/</code>. A pattern file is matched when a rule from it
 completes its replacement successfully.</p>
-<p>Unicode mapping files are omitted because this report measures pattern-rule coverage.</p>
+<p>Unicode mapping and definition files are omitted because this report measures pattern-rule coverage.</p>
 {% if errors %}
 <section class="problems"><h2>Problems</h2><ul>
 {% for error in errors %}<li>{{ error }}</li>{% endfor %}
