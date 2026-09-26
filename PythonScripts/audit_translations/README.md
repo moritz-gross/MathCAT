@@ -84,7 +84,7 @@ uv run --project PythonScripts audit-translations --rule-coverage
 * `--rules-dir`: Override the Rules/Languages directory path.
 * `--only`: Filter issue types (comma-separated): `missing`, `untranslated`, `extra`, `diffs`, `all`.
 * `--verbose`: Show detailed output including source/target snippets for rule differences.
-* `--rule-coverage`: Run the full Rust test suite, generate file- and rule-level YAML coverage under `target/rule-coverage/`, and open the HTML report. Expand a file to inspect matched and unmatched rules by name and tag. This runs independently of a language audit.
+* `--rule-coverage`: Run the full Rust test suite, generate file- and rule-level pattern coverage under `target/rule-coverage/`, and open the HTML report. Unicode mapping files are omitted. Expand a file to inspect matched and unmatched rules by name and tag. This runs independently of a language audit.
 * **Summary Stats:** Provides a statistical summary after every run.
 
 **Examples:**

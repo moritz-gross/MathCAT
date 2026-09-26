@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rule YAML coverage</title>
+<style>
+body { max-width: 75rem; margin: 2rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; color: #17212b; }
+h1, h2 { line-height: 1.2; }
+.summary { display: flex; flex-wrap: wrap; gap: .5rem 2rem; }
+.problems { padding: .5rem 1rem; background: #fff0ed; border-left: .25rem solid #b42318; }
+.controls { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0; }
+input, select { font: inherit; padding: .35rem .5rem; }
+input { flex: 1 1 20rem; }
+.file { border: 1px solid #cad4dc; border-radius: .4rem; margin: .5rem 0; padding: .6rem 1rem; }
+summary { cursor: pointer; }
+.count { float: right; color: #52616d; }
+.badge { display: inline-block; border-radius: .3rem; padding: .05rem .4rem; font-size: .85rem; font-weight: 600; }
+.badge.matched { color: #155c36; background: #dcf5e5; }
+.badge.unmatched { color: #8b3d00; background: #fff0cf; }
+.rules { list-style: none; padding-left: 1rem; }
+.rules li { padding: .2rem 0; }
+.rule-name { font-weight: 600; }
+.empty { color: #52616d; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<h1>Rule YAML coverage</h1>
+<p>Status: <strong>{{ status }}</strong></p>
+<div class="summary"><span>{{ loaded_count }} files loaded</span><span>{{ matched_count }} pattern files matched</span>
+<span>{{ matched_rule_count }} of {{ defined_rule_count }} active rules matched</span></div>
+<p>Paths are relative to <code>Rules/</code>. A pattern file is matched when a rule from it
+completes its replacement successfully.</p>
+<p>Unicode mapping files are omitted because this report measures pattern-rule coverage.</p>
+{% if errors %}
+<section class="problems"><h2>Problems</h2><ul>
+{% for error in errors %}<li>{{ error }}</li>{% endfor %}
+</ul></section>
+{% endif %}
+<div class="controls"><input id="search" type="search" aria-label="Search files and rules"
+placeholder="Search paths, rule names, or tags">
+<select id="status" aria-label="Filter by coverage"><option value="all">All</option>
+<option value="matched">Matched</option><option value="unmatched">No match</option></select></div>
+<div id="files">
+{% for file in files %}
+<details class="file" data-file-search="{{ file.path }}" data-status="{{ 'matched' if file.matched else 'unmatched' }}">
+<summary><span class="badge {{ 'matched' if file.matched else 'unmatched' }}">{{ 'Matched' if file.matched else 'No match' }}</span>
+<code>{{ file.path }}</code> <span class="count">{{ file.matched_count }}/{{ file.rule_count }} rules</span></summary>
+{% if file.rules %}
+<p>{{ file.matched_count }} of {{ file.rule_count }} active rules matched</p><ul class="rules">
+{% for rule in file.rules %}
+<li data-rule-search="{{ rule.name }} {{ rule.tag }}" data-status="{{ 'matched' if rule.matched else 'unmatched' }}">
+<span class="badge {{ 'matched' if rule.matched else 'unmatched' }}">{{ 'Matched' if rule.matched else 'No match' }}</span>
+<span class="rule-name">{{ rule.name }}</span> <code>{{ rule.tag }}</code></li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="empty">No active pattern rules</p>
+{% endif %}
+</details>
+{% endfor %}
+</div>
+<p id="no-results" hidden>No matching files or rules</p>
+<script>
+const search = document.getElementById('search');
+const status = document.getElementById('status');
+const files = [...document.querySelectorAll('.file')];
+function filter() {
+  const query = search.value.trim().toLocaleLowerCase();
+  let visible = 0;
+  for (const file of files) {
+    const pathMatches = file.dataset.fileSearch.toLocaleLowerCase().includes(query);
+    let visibleRules = 0;
+    for (const rule of file.querySelectorAll('[data-rule-search]')) {
+      const show = (status.value === 'all' || rule.dataset.status === status.value)
+        && (pathMatches || rule.dataset.ruleSearch.toLocaleLowerCase().includes(query));
+      rule.hidden = !show;
+      if (show) visibleRules++;
+    }
+    const fileStatusMatches = status.value === 'all' || file.dataset.status === status.value;
+    const showFile = (pathMatches && fileStatusMatches) || visibleRules > 0;
+    file.hidden = !showFile;
+    if (showFile) visible++;
+  }
+  document.getElementById('no-results').hidden = visible > 0;
+}
+search.addEventListener('input', filter);
+status.addEventListener('change', filter);
+</script>
+</body>
+</html>
