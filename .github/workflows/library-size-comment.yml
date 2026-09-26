@@ -1,0 +1,102 @@
+name: Library Size Comment
+
+on:
+  workflow_run:
+    workflows: [Library Size]
+    types: [completed]
+
+permissions:
+  actions: read
+  pull-requests: write
+
+concurrency:
+  group: library-size-comment-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  comment:
+    name: Update PR comment
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download measurements
+        uses: actions/download-artifact@v8
+        with:
+          name: library-size-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/mathcat-size-report
+
+      # This job never checks out or executes PR code. Treat the downloaded report as untrusted.
+      - name: Update size comment
+        uses: actions/github-script@v9
+        env:
+          REPORT_PATH: ${{ runner.temp }}/mathcat-size-report/report.json
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync(process.env.REPORT_PATH, 'utf8'));
+            const run = context.payload.workflow_run;
+            const shaPattern = /^[0-9a-f]{40}$/i;
+            if (!Number.isSafeInteger(report.prNumber) || report.prNumber <= 0 ||
+                !shaPattern.test(report.baseSha) || !shaPattern.test(report.headSha) ||
+                !Number.isSafeInteger(report.baseBytes) || report.baseBytes <= 0 ||
+                !Number.isSafeInteger(report.headBytes) || report.headBytes <= 0) {
+              core.setFailed('Invalid library size report');
+              return;
+            }
+
+            const {owner, repo} = context.repo;
+            const {data: pull} = await github.rest.pulls.get({
+              owner, repo, pull_number: report.prNumber,
+            });
+            if (pull.state !== 'open' || pull.base.sha !== report.baseSha ||
+                pull.head.sha !== report.headSha) {
+              core.notice('PR revisions changed or PR closed; ignoring stale measurements');
+              return;
+            }
+            if (run.head_repository?.id !== pull.head.repo?.id ||
+                run.head_branch !== pull.head.ref) {
+              core.setFailed('Report does not match the triggering branch');
+              return;
+            }
+            if (run.pull_requests?.length > 0 &&
+                !run.pull_requests.some(pr => pr.number === report.prNumber)) {
+              core.setFailed('Report does not belong to the triggering PR');
+              return;
+            }
+
+            const marker = '<!-- mathcat-library-size -->';
+            const formatSize = bytes => `${(bytes / 1048576).toFixed(2)} MiB (${bytes.toLocaleString('en-US')} bytes)`;
+            const delta = report.headBytes - report.baseBytes;
+            const deltaPercent = 100 * delta / report.baseBytes;
+            const signed = value => value > 0 ? `+${value}` : String(value);
+            const body = [
+              marker,
+              '### Linux library size',
+              '',
+              '| Revision | Release `liblibmathcat.so` |',
+              '| --- | ---: |',
+              `| Base (${report.baseSha.slice(0, 7)}) | ${formatSize(report.baseBytes)} |`,
+              `| PR (${report.headSha.slice(0, 7)}) | ${formatSize(report.headBytes)} |`,
+              `| Change | ${delta > 0 ? '+' : ''}${delta.toLocaleString('en-US')} bytes (${signed(deltaPercent.toFixed(2))}%) |`,
+              '',
+              `Built with default features, Rust 1.96.0, and Ubuntu 24.04. [Workflow run](${run.html_url}).`,
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: report.prNumber, per_page: 100,
+            });
+            const previous = comments.find(comment =>
+              comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker));
+            if (previous) {
+              if (previous.body !== body) {
+                await github.rest.issues.updateComment({
+                  owner, repo, comment_id: previous.id, body,
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: report.prNumber, body,
+              });
+            }
