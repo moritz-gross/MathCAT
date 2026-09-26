@@ -43,7 +43,7 @@ fn record(kind: EventKind, path: &Path, name: &str, tag: &str) {
     let event_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("target/rule-coverage/events");
     fs::create_dir_all(&event_dir).expect("cannot create rule coverage event directory");
-    let event_file = event_dir.join(format!("{}.events", std::process::id()));
+    let event_file = event_dir.join(format!("pid-{}.events", std::process::id()));
     let mut output = OpenOptions::new().create(true).append(true).open(event_file)
         .expect("cannot open rule coverage event file");
     match kind {

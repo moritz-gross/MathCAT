@@ -19,7 +19,7 @@ def test_coverage_command_generates_reports_and_opens_browser(tmp_path: Path, mo
     def fake_cargo(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         assert command == ["cargo", "test", "--features", "rule-coverage"]
         assert kwargs["cwd"] == tmp_path
-        (output / "events" / "123.events").write_text(
+        (output / "events" / "pid-123.events").write_text(
             "loaded\tLanguages/en/SimpleSpeak_Rules.yaml\n"
             "loaded\tLanguages/en/definitions.yaml\n"
             "matched\tLanguages/en/SimpleSpeak_Rules.yaml\n"
